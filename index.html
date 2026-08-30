@@ -1,869 +1,423 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport"
-      content="width=device-width,
-               initial-scale=1.0,
-               maximum-scale=1.0,
-               user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
-<title>Camera Vision Scanner</title>
+<title>Camera Object Scanner</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-detection"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
 
 <style>
-* {
-    box-sizing: border-box;
+html,body {
+    margin:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#000;
 }
 
-html, body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #000;
-    font-family: Arial, sans-serif;
+#video {
+    position:fixed;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
 }
 
-#camera {
-    position: fixed;
-    inset: 0;
-
-    width: 100%;
-    height: 100%;
-
-    object-fit: cover;
-}
-
-#overlay {
-    position: fixed;
-    inset: 0;
-
-    width: 100%;
-    height: 100%;
-
-    pointer-events: none;
-}
-
-#topBar {
-    position: fixed;
-    top: 0;
-    left: 0;
-
-    width: 100%;
-
-    padding: 15px;
-
-    background: rgba(0,0,0,.65);
-
-    color: white;
-
-    z-index: 10;
-
-    font-size: 15px;
+#canvas {
+    position:fixed;
+    inset:0;
+    width:100%;
+    height:100%;
 }
 
 #status {
-    font-weight: bold;
-}
+    position:fixed;
+    top:15px;
+    left:15px;
+    z-index:10;
 
-#info {
-    margin-top: 5px;
+    background:rgba(0,0,0,.7);
+    color:white;
 
-    font-size: 13px;
+    padding:10px;
+    border-radius:8px;
 
-    opacity: .8;
-}
-
-#start {
-    position: fixed;
-
-    left: 50%;
-    top: 50%;
-
-    transform: translate(-50%, -50%);
-
-    padding: 16px 28px;
-
-    border: none;
-    border-radius: 10px;
-
-    background: white;
-    color: black;
-
-    font-size: 17px;
-    font-weight: bold;
-
-    z-index: 20;
-}
-
-#legend {
-    position: fixed;
-
-    bottom: 20px;
-    left: 50%;
-
-    transform: translateX(-50%);
-
-    padding: 10px 15px;
-
-    background: rgba(0,0,0,.7);
-
-    color: white;
-
-    border-radius: 8px;
-
-    font-size: 13px;
-
-    z-index: 10;
-
-    text-align: center;
+    font-family:Arial;
 }
 </style>
 </head>
 
 <body>
 
-<video id="camera"
-       autoplay
-       playsinline>
-</video>
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
 
-<canvas id="overlay"></canvas>
-
-<div id="topBar">
-
-    <div id="status">
-        Camera inactive
-    </div>
-
-    <div id="info">
-        Face + clothing color scanner
-    </div>
-
+<div id="status">
+Loading...
 </div>
-
-<button id="start">
-    START CAMERA
-</button>
-
-<div id="legend">
-    Face = white box<br>
-    Clothing = colored box
-</div>
-
 
 <script>
 
 const video =
-    document.getElementById("camera");
+    document.getElementById("video");
 
 const canvas =
-    document.getElementById("overlay");
+    document.getElementById("canvas");
 
 const ctx =
     canvas.getContext("2d");
 
-const startButton =
-    document.getElementById("start");
-
 const status =
     document.getElementById("status");
 
-
-let detector = null;
-
-let running = false;
+let model;
 
 
-/*
-===========================================================
-START CAMERA
-===========================================================
-*/
+/* =========================
+   CAMERA
+========================= */
 
 async function startCamera() {
 
-    try {
+    const stream =
+        await navigator.mediaDevices.getUserMedia({
 
-        status.textContent =
-            "Requesting camera...";
+            video: {
+                facingMode:"environment",
+                width:{ideal:1280},
+                height:{ideal:720}
+            },
 
-        const stream =
-            await navigator.mediaDevices.getUserMedia({
+            audio:false
+        });
 
-                video: {
-                    facingMode: {
-                        ideal: "environment"
-                    },
+    video.srcObject = stream;
 
-                    width: {
-                        ideal: 1280
-                    },
+    await video.play();
 
-                    height: {
-                        ideal: 720
-                    }
-                },
+    canvas.width =
+        video.videoWidth;
 
-                audio: false
-            });
-
-
-        video.srcObject = stream;
-
-
-        await video.play();
-
-
-        canvas.width =
-            video.videoWidth;
-
-        canvas.height =
-            video.videoHeight;
-
-
-        status.textContent =
-            "Loading face detector...";
-
-
-        detector =
-            await faceDetection.createDetector(
-
-                faceDetection.SupportedModels.MediaPipeFaceDetector,
-
-                {
-                    runtime: "tfjs",
-
-                    modelType: "short",
-
-                    maxFaces: 10
-                }
-
-            );
-
-
-        status.textContent =
-            "SCANNER ACTIVE";
-
-
-        startButton.style.display =
-            "none";
-
-
-        running = true;
-
-
-        scan();
-
-
-    } catch (error) {
-
-        console.error(error);
-
-
-        status.textContent =
-            "Camera access failed";
-
-
-        alert(
-            "Camera access failed.\n\n" +
-            "Make sure this page is opened through HTTPS " +
-            "and that camera permission is allowed."
-        );
-
-    }
-
+    canvas.height =
+        video.videoHeight;
 }
 
 
-/*
-===========================================================
-SCAN LOOP
-===========================================================
-*/
+/* =========================
+   COLOR
+========================= */
 
-async function scan() {
+function getColor(x,y,w,h) {
 
-    if (!running)
-        return;
-
-
-    try {
-
-        const faces =
-            await detector.estimateFaces(video);
-
-
-        ctx.clearRect(
-            0,
-            0,
-            canvas.width,
-            canvas.height
-        );
-
-
-        for (const face of faces) {
-
-            drawFace(face);
-
-            analyzeClothing(face);
-
-        }
-
-
-    } catch (error) {
-
-        console.error(error);
-
-    }
-
-
-    requestAnimationFrame(scan);
-
-}
-
-
-/*
-===========================================================
-FACE BOX
-===========================================================
-*/
-
-function drawFace(face) {
-
-    const box =
-        face.box;
-
-
-    const x =
-        box.xMin;
-
-    const y =
-        box.yMin;
-
-    const width =
-        box.width;
-
-    const height =
-        box.height;
-
-
-    ctx.strokeStyle =
-        "#ffffff";
-
-    ctx.lineWidth =
-        4;
-
-
-    ctx.strokeRect(
-        x,
-        y,
-        width,
-        height
-    );
-
-
-    /*
-    Face label
-    */
-
-    ctx.fillStyle =
-        "rgba(0,0,0,.75)";
-
-
-    ctx.fillRect(
-        x,
-        y - 28,
-        100,
-        28
-    );
-
-
-    ctx.fillStyle =
-        "#ffffff";
-
-    ctx.font =
-        "bold 15px Arial";
-
-
-    ctx.fillText(
-        "FACE",
-        x + 8,
-        y - 9
-    );
-
-}
-
-
-/*
-===========================================================
-CLOTHING ANALYSIS
-===========================================================
-*/
-
-function analyzeClothing(face) {
-
-    const box =
-        face.box;
-
-
-    /*
-    Estimate clothing region.
-
-    Clothing normally begins below
-    the face.
-    */
-
-    const clothingX =
-        box.xMin - box.width * 0.8;
-
-    const clothingY =
-        box.yMin + box.height * 1.05;
-
-    const clothingWidth =
-        box.width * 2.6;
-
-    const clothingHeight =
-        box.height * 2.2;
-
-
-    /*
-    Keep coordinates inside camera.
-    */
-
-    const x =
-        Math.max(
-            0,
-            clothingX
-        );
-
-    const y =
-        Math.max(
-            0,
-            clothingY
-        );
-
-    const width =
-        Math.min(
-            clothingWidth,
-            canvas.width - x
-        );
-
-    const height =
-        Math.min(
-            clothingHeight,
-            canvas.height - y
-        );
-
-
-    if (
-        width <= 5 ||
-        height <= 5
-    ) {
-
-        return;
-
-    }
-
-
-    /*
-    Analyze center of clothing area.
-    */
-
-    const color =
-        getDominantColor(
-            x,
-            y,
-            width,
-            height
-        );
-
-
-    /*
-    Clothing box
-    */
-
-    ctx.strokeStyle =
-        color.hex;
-
-    ctx.lineWidth =
-        5;
-
-
-    ctx.strokeRect(
-        x,
-        y,
-        width,
-        height
-    );
-
-
-    /*
-    Clothing label
-    */
-
-    ctx.fillStyle =
-        "rgba(0,0,0,.75)";
-
-
-    ctx.fillRect(
-        x,
-        y + height,
-        180,
-        30
-    );
-
-
-    ctx.fillStyle =
-        color.hex;
-
-
-    ctx.font =
-        "bold 16px Arial";
-
-
-    ctx.fillText(
-        "CLOTHING: " + color.name,
-        x + 8,
-        y + height + 21
-    );
-
-}
-
-
-/*
-===========================================================
-COLOR DETECTION
-===========================================================
-*/
-
-function getDominantColor(
-    x,
-    y,
-    width,
-    height
-) {
-
-    /*
-    Create temporary canvas.
-    */
-
-    const sample =
+    const temp =
         document.createElement("canvas");
 
+    temp.width = 30;
+    temp.height = 30;
 
-    sample.width =
-        40;
+    const t =
+        temp.getContext("2d");
 
-    sample.height =
-        40;
-
-
-    const sampleCtx =
-        sample.getContext("2d");
-
-
-    sampleCtx.drawImage(
-
+    t.drawImage(
         video,
+        x,y,w,h,
+        0,0,30,30
+    );
 
-        x,
-        y,
-        width,
-        height,
+    const data =
+        t.getImageData(
+            0,0,30,30
+        ).data;
 
+    let r=0;
+    let g=0;
+    let b=0;
+    let count=0;
+
+    for(let i=0;i<data.length;i+=4){
+
+        const R=data[i];
+        const G=data[i+1];
+        const B=data[i+2];
+
+        r+=R;
+        g+=G;
+        b+=B;
+
+        count++;
+    }
+
+    r/=count;
+    g/=count;
+    b/=count;
+
+
+    if(r<60 && g<60 && b<60)
+        return "BLACK";
+
+    if(r>190 && g>190 && b>190)
+        return "WHITE";
+
+    if(g>r*1.25 && g>b*1.15)
+        return "GREEN";
+
+    if(r>g*1.3 && r>b*1.3)
+        return "RED";
+
+    if(b>r*1.25 && b>g*1.1)
+        return "BLUE";
+
+    if(r>150 && g>120 && b<100)
+        return "YELLOW";
+
+    if(r>150 && g>70 && b<80)
+        return "ORANGE";
+
+    if(r>90 && b>90 && g<80)
+        return "PURPLE";
+
+    if(
+        Math.abs(r-g)<25 &&
+        Math.abs(g-b)<25
+    )
+        return "GRAY";
+
+    return "MIXED";
+}
+
+
+/* =========================
+   DETECTION
+========================= */
+
+async function detect() {
+
+    const predictions =
+        await model.detect(video);
+
+
+    ctx.clearRect(
         0,
         0,
-        40,
-        40
-
+        canvas.width,
+        canvas.height
     );
 
 
-    const image =
-        sampleCtx.getImageData(
-            0,
-            0,
-            40,
-            40
-        );
+    let found = 0;
 
 
-    let red = 0;
-    let green = 0;
-    let blue = 0;
+    for(const p of predictions) {
 
-    let count = 0;
+        if(p.score < 0.45)
+            continue;
 
 
-    /*
-    Sample pixels.
-    */
-
-    for (
-        let i = 0;
-        i < image.data.length;
-        i += 4
-    ) {
-
-        const r =
-            image.data[i];
-
-        const g =
-            image.data[i + 1];
-
-        const b =
-            image.data[i + 2];
+        const [
+            x,
+            y,
+            w,
+            h
+        ] = p.bbox;
 
 
         /*
-        Ignore very dark pixels.
+        PERSON
         */
 
-        if (
-            r < 25 &&
-            g < 25 &&
-            b < 25
-        ) {
+        if(p.class === "person") {
 
-            continue;
+            found++;
 
+
+            /*
+            Person box
+            */
+
+            ctx.strokeStyle =
+                "#00ff00";
+
+            ctx.lineWidth = 4;
+
+            ctx.strokeRect(
+                x,y,w,h
+            );
+
+
+            /*
+            Person label
+            */
+
+            const color =
+                getColor(
+                    x,
+                    y + h*0.30,
+                    w,
+                    h*0.45
+                );
+
+
+            ctx.fillStyle =
+                "rgba(0,0,0,.75)";
+
+            ctx.fillRect(
+                x,
+                y-32,
+                230,
+                32
+            );
+
+
+            ctx.fillStyle =
+                "#00ff00";
+
+            ctx.font =
+                "bold 17px Arial";
+
+            ctx.fillText(
+                "PERSON | CLOTHING: " +
+                color,
+                x+7,
+                y-10
+            );
+
+
+            /*
+            CLOTHING REGION
+
+            Approximation:
+            middle portion of person
+            */
+
+            const clothingX =
+                x + w*0.15;
+
+            const clothingY =
+                y + h*0.25;
+
+            const clothingW =
+                w*0.70;
+
+            const clothingH =
+                h*0.45;
+
+
+            ctx.strokeStyle =
+                "#00ffff";
+
+            ctx.lineWidth = 3;
+
+            ctx.strokeRect(
+                clothingX,
+                clothingY,
+                clothingW,
+                clothingH
+            );
+
+
+            ctx.fillStyle =
+                "#00ffff";
+
+            ctx.font =
+                "bold 15px Arial";
+
+            ctx.fillText(
+                color + " CLOTHING",
+                clothingX,
+                clothingY-7
+            );
         }
 
 
-        red += r;
-        green += g;
-        blue += b;
+        /*
+        OTHER OBJECTS
+        */
 
-        count++;
+        else {
 
+            ctx.strokeStyle =
+                "#ffffff";
+
+            ctx.lineWidth = 2;
+
+            ctx.strokeRect(
+                x,y,w,h
+            );
+
+
+            ctx.fillStyle =
+                "white";
+
+            ctx.font =
+                "15px Arial";
+
+            ctx.fillText(
+                p.class +
+                " " +
+                Math.round(p.score*100) +
+                "%",
+                x,
+                y-5
+            );
+        }
     }
 
 
-    if (count === 0) {
-
-        return {
-            name: "UNKNOWN",
-            hex: "#ffffff"
-        };
-
-    }
+    status.textContent =
+        found +
+        " person(s) detected";
 
 
-    red /= count;
-    green /= count;
-    blue /= count;
-
-
-    return classifyColor(
-        red,
-        green,
-        blue
+    requestAnimationFrame(
+        detect
     );
-
 }
 
 
-/*
-===========================================================
-COLOR CLASSIFIER
-===========================================================
-*/
+/* =========================
+   START
+========================= */
 
-function classifyColor(
-    r,
-    g,
-    b
-) {
+async function main() {
 
-    const max =
-        Math.max(r, g, b);
+    try {
 
-    const min =
-        Math.min(r, g, b);
+        status.textContent =
+            "Starting camera...";
+
+        await startCamera();
 
 
-    /*
-    Black
-    */
+        status.textContent =
+            "Loading AI model...";
 
-    if (max < 55) {
 
-        return {
-            name: "BLACK",
-            hex: "#555555"
-        };
+        model =
+            await cocoSsd.load();
 
+
+        status.textContent =
+            "SCANNING";
+
+
+        detect();
+
+
+    } catch(error) {
+
+        console.error(error);
+
+        status.textContent =
+            "ERROR: " +
+            error.message;
     }
-
-
-    /*
-    White
-    */
-
-    if (
-        min > 190 &&
-        max - min < 45
-    ) {
-
-        return {
-            name: "WHITE",
-            hex: "#ffffff"
-        };
-
-    }
-
-
-    /*
-    Gray
-    */
-
-    if (
-        max - min < 30
-    ) {
-
-        return {
-            name: "GRAY",
-            hex: "#aaaaaa"
-        };
-
-    }
-
-
-    /*
-    Red
-    */
-
-    if (
-        r > g * 1.35 &&
-        r > b * 1.35
-    ) {
-
-        return {
-            name: "RED",
-            hex: "#ff0000"
-        };
-
-    }
-
-
-    /*
-    Green
-    */
-
-    if (
-        g > r * 1.25 &&
-        g > b * 1.15
-    ) {
-
-        return {
-            name: "GREEN",
-            hex: "#00ff00"
-        };
-
-    }
-
-
-    /*
-    Blue
-    */
-
-    if (
-        b > r * 1.25 &&
-        b > g * 1.10
-    ) {
-
-        return {
-            name: "BLUE",
-            hex: "#008cff"
-        };
-
-    }
-
-
-    /*
-    Yellow
-    */
-
-    if (
-        r > 130 &&
-        g > 110 &&
-        b < 90
-    ) {
-
-        return {
-            name: "YELLOW",
-            hex: "#ffff00"
-        };
-
-    }
-
-
-    /*
-    Purple
-    */
-
-    if (
-        r > 90 &&
-        b > 90 &&
-        g < r * 0.8 &&
-        g < b * 0.8
-    ) {
-
-        return {
-            name: "PURPLE",
-            hex: "#bb66ff"
-        };
-
-    }
-
-
-    /*
-    Orange
-    */
-
-    if (
-        r > 150 &&
-        g > 70 &&
-        g < r * 0.8 &&
-        b < 80
-    ) {
-
-        return {
-            name: "ORANGE",
-            hex: "#ff8800"
-        };
-
-    }
-
-
-    return {
-
-        name: "MIXED",
-
-        hex:
-            `rgb(${Math.round(r)},
-                 ${Math.round(g)},
-                 ${Math.round(b)})`
-
-    };
-
 }
 
 
-/*
-===========================================================
-BUTTON
-===========================================================
-*/
-
-startButton.addEventListener(
-    "click",
-    startCamera
-);
+main();
 
 </script>
 
