@@ -1,1770 +1,727 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
 <meta charset="UTF-8">
-
-<meta name="viewport"
-      content="width=device-width,
-               initial-scale=1.0,
-               maximum-scale=1.0,
-               user-scalable=no">
-
-<title>Vision Scanner</title>
-
-<!-- MediaPipe Face Detection -->
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js"></script>
-
-<!-- MediaPipe Pose -->
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grade 7 Science - Term 1 Test</title>
 
 <style>
+    * {
+        box-sizing: border-box;
+    }
 
-* {
-    box-sizing: border-box;
-}
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #111;
+        color: #eee;
+        padding: 20px;
+    }
 
-html,
-body {
+    .container {
+        max-width: 800px;
+        margin: auto;
+    }
 
-    margin: 0;
+    .header {
+        background: #1c1c1c;
+        border: 1px solid #333;
+        border-radius: 14px;
+        padding: 25px;
+        margin-bottom: 20px;
+    }
 
-    width: 100%;
-    height: 100%;
+    h1 {
+        margin: 0 0 8px;
+        font-size: 27px;
+    }
 
-    overflow: hidden;
+    .subtitle {
+        color: #aaa;
+    }
 
-    background: #000;
+    .question {
+        background: #1b1b1b;
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+    }
 
-    font-family:
-        Arial,
-        sans-serif;
-}
+    .question h3 {
+        margin-top: 0;
+        line-height: 1.4;
+    }
 
-#camera {
+    label {
+        display: block;
+        background: #252525;
+        border: 1px solid #383838;
+        border-radius: 8px;
+        padding: 13px;
+        margin: 8px 0;
+        cursor: pointer;
+        transition: 0.15s;
+    }
 
-    position: fixed;
+    label:hover {
+        background: #303030;
+    }
 
-    left: 0;
-    top: 0;
+    input[type="radio"] {
+        margin-right: 10px;
+    }
 
-    width: 100%;
-    height: 100%;
+    .submit {
+        width: 100%;
+        border: none;
+        border-radius: 10px;
+        padding: 17px;
+        background: #4b6cff;
+        color: white;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        margin-top: 10px;
+    }
 
-    object-fit: cover;
+    .submit:hover {
+        background: #3959e8;
+    }
 
-    background: #000;
-}
+    #result {
+        display: none;
+        background: #1c1c1c;
+        border: 1px solid #444;
+        border-radius: 14px;
+        padding: 25px;
+        margin-top: 20px;
+    }
 
-#overlay {
+    .score {
+        font-size: 30px;
+        font-weight: bold;
+    }
 
-    position: fixed;
+    .correct {
+        border-color: #35c76f !important;
+        background: #16351f !important;
+    }
 
-    left: 0;
-    top: 0;
+    .wrong {
+        border-color: #e05252 !important;
+        background: #351616 !important;
+    }
 
-    width: 100%;
-    height: 100%;
+    .answer {
+        color: #6ee88d;
+        font-weight: bold;
+        margin-top: 8px;
+    }
 
-    pointer-events: none;
-}
-
-#panel {
-
-    position: fixed;
-
-    left: 10px;
-    right: 10px;
-    top: 10px;
-
-    z-index: 20;
-
-    padding: 12px;
-
-    border-radius: 12px;
-
-    background:
-        rgba(0,0,0,.72);
-
-    color: white;
-
-    backdrop-filter:
-        blur(8px);
-}
-
-#title {
-
-    font-size: 18px;
-
-    font-weight: bold;
-
-    margin-bottom: 5px;
-}
-
-#status {
-
-    font-size: 13px;
-
-    opacity: .85;
-}
-
-#results {
-
-    margin-top: 7px;
-
-    font-size: 13px;
-
-    line-height: 1.5;
-}
-
-#start {
-
-    position: fixed;
-
-    left: 50%;
-    top: 50%;
-
-    transform:
-        translate(-50%,-50%);
-
-    z-index: 50;
-
-    border: none;
-
-    border-radius: 12px;
-
-    padding: 16px 25px;
-
-    font-size: 17px;
-
-    font-weight: bold;
-
-    background: white;
-
-    color: black;
-}
-
-#fps {
-
-    position: fixed;
-
-    right: 10px;
-    bottom: 10px;
-
-    z-index: 20;
-
-    padding: 7px 10px;
-
-    border-radius: 8px;
-
-    background:
-        rgba(0,0,0,.65);
-
-    color: white;
-
-    font-family: monospace;
-
-    font-size: 12px;
-}
-
+    .unanswered {
+        border-color: #d6a934 !important;
+    }
 </style>
-
 </head>
 
 <body>
 
-<video
-    id="camera"
-    autoplay
-    playsinline>
-</video>
+<div class="container">
 
-<canvas id="overlay"></canvas>
-
-<div id="panel">
-
-    <div id="title">
-        VISION SCANNER
+<div class="header">
+    <h1>Grade 7 Science — Term 1 Test</h1>
+    <div class="subtitle">
+        50 Questions • Multiple Choice • Choose A, B, C, or D
     </div>
-
-    <div id="status">
-        Camera inactive
-    </div>
-
-    <div id="results">
-        Waiting...
-    </div>
-
 </div>
 
-<div id="fps">
-    0 FPS
+<form id="quiz">
+
+<!-- 1 -->
+<div class="question" id="q1">
+<h3>1. What is a scientific model?</h3>
+<label><input type="radio" name="q1" value="A"> A. A random guess</label>
+<label><input type="radio" name="q1" value="B"> B. A representation used to understand something</label>
+<label><input type="radio" name="q1" value="C"> C. A measurement tool</label>
+<label><input type="radio" name="q1" value="D"> D. A type of matter</label>
 </div>
 
-<button id="start">
-    START CAMERA
+<!-- 2 -->
+<div class="question" id="q2">
+<h3>2. Which is an example of a scientific model?</h3>
+<label><input type="radio" name="q2" value="A"> A. Globe</label>
+<label><input type="radio" name="q2" value="B"> B. Stopwatch</label>
+<label><input type="radio" name="q2" value="C"> C. Thermometer</label>
+<label><input type="radio" name="q2" value="D"> D. Balance</label>
+</div>
+
+<!-- 3 -->
+<div class="question" id="q3">
+<h3>3. Scientific models are useful because they can:</h3>
+<label><input type="radio" name="q3" value="A"> A. Replace all experiments</label>
+<label><input type="radio" name="q3" value="B"> B. Make difficult concepts easier to understand</label>
+<label><input type="radio" name="q3" value="C"> C. Make matter disappear</label>
+<label><input type="radio" name="q3" value="D"> D. Stop particles from moving</label>
+</div>
+
+<!-- 4 -->
+<div class="question" id="q4">
+<h3>4. A scientific model is usually:</h3>
+<label><input type="radio" name="q4" value="A"> A. An exact copy of reality</label>
+<label><input type="radio" name="q4" value="B"> B. A simplified representation</label>
+<label><input type="radio" name="q4" value="C"> C. Always made of metal</label>
+<label><input type="radio" name="q4" value="D"> D. Always invisible</label>
+</div>
+
+<!-- 5 -->
+<div class="question" id="q5">
+<h3>5. Which model represents Earth?</h3>
+<label><input type="radio" name="q5" value="A"> A. Beaker</label>
+<label><input type="radio" name="q5" value="B"> B. Globe</label>
+<label><input type="radio" name="q5" value="C"> C. Balance</label>
+<label><input type="radio" name="q5" value="D"> D. Thermometer</label>
+</div>
+
+<!-- 6 -->
+<div class="question" id="q6">
+<h3>6. How are particles arranged in a solid?</h3>
+<label><input type="radio" name="q6" value="A"> A. Very far apart</label>
+<label><input type="radio" name="q6" value="B"> B. Close together and organized</label>
+<label><input type="radio" name="q6" value="C"> C. Completely separated</label>
+<label><input type="radio" name="q6" value="D"> D. Randomly floating everywhere</label>
+</div>
+
+<!-- 7 -->
+<div class="question" id="q7">
+<h3>7. What do particles in a solid mainly do?</h3>
+<label><input type="radio" name="q7" value="A"> A. Fly freely</label>
+<label><input type="radio" name="q7" value="B"> B. Vibrate around fixed positions</label>
+<label><input type="radio" name="q7" value="C"> C. Disappear</label>
+<label><input type="radio" name="q7" value="D"> D. Move randomly across the container</label>
+</div>
+
+<!-- 8 -->
+<div class="question" id="q8">
+<h3>8. Why are solids difficult to compress?</h3>
+<label><input type="radio" name="q8" value="A"> A. Their particles are already close together</label>
+<label><input type="radio" name="q8" value="B"> B. Their particles are extremely far apart</label>
+<label><input type="radio" name="q8" value="C"> C. They contain no particles</label>
+<label><input type="radio" name="q8" value="D"> D. They have no mass</label>
+</div>
+
+<!-- 9 -->
+<div class="question" id="q9">
+<h3>9. Which state of matter has particles packed closely in an organized arrangement?</h3>
+<label><input type="radio" name="q9" value="A"> A. Solid</label>
+<label><input type="radio" name="q9" value="B"> B. Liquid</label>
+<label><input type="radio" name="q9" value="C"> C. Gas</label>
+<label><input type="radio" name="q9" value="D"> D. Plasma only</label>
+</div>
+
+<!-- 10 -->
+<div class="question" id="q10">
+<h3>10. Which statement about particles in solids is correct?</h3>
+<label><input type="radio" name="q10" value="A"> A. They never move</label>
+<label><input type="radio" name="q10" value="B"> B. They vibrate in place</label>
+<label><input type="radio" name="q10" value="C"> C. They move freely throughout the container</label>
+<label><input type="radio" name="q10" value="D"> D. They are very far apart</label>
+</div>
+
+<!-- 11 -->
+<div class="question" id="q11">
+<h3>11. Which state has particles that can slide past one another?</h3>
+<label><input type="radio" name="q11" value="A"> A. Solid</label>
+<label><input type="radio" name="q11" value="B"> B. Liquid</label>
+<label><input type="radio" name="q11" value="C"> C. None</label>
+<label><input type="radio" name="q11" value="D"> D. Only solid</label>
+</div>
+
+<!-- 12 -->
+<div class="question" id="q12">
+<h3>12. Which state has particles that move freely and rapidly?</h3>
+<label><input type="radio" name="q12" value="A"> A. Solid</label>
+<label><input type="radio" name="q12" value="B"> B. Liquid</label>
+<label><input type="radio" name="q12" value="C"> C. Gas</label>
+<label><input type="radio" name="q12" value="D"> D. Ice</label>
+</div>
+
+<!-- 13 -->
+<div class="question" id="q13">
+<h3>13. What generally happens to particle motion when temperature increases?</h3>
+<label><input type="radio" name="q13" value="A"> A. It increases</label>
+<label><input type="radio" name="q13" value="B"> B. It stops</label>
+<label><input type="radio" name="q13" value="C"> C. It disappears</label>
+<label><input type="radio" name="q13" value="D"> D. It always decreases</label>
+</div>
+
+<!-- 14 -->
+<div class="question" id="q14">
+<h3>14. What is kinetic energy?</h3>
+<label><input type="radio" name="q14" value="A"> A. Energy of position</label>
+<label><input type="radio" name="q14" value="B"> B. Energy of motion</label>
+<label><input type="radio" name="q14" value="C"> C. Energy stored in chemicals only</label>
+<label><input type="radio" name="q14" value="D"> D. Energy of color</label>
+</div>
+
+<!-- 15 -->
+<div class="question" id="q15">
+<h3>15. Which particles generally have the greatest freedom of movement?</h3>
+<label><input type="radio" name="q15" value="A"> A. Solid particles</label>
+<label><input type="radio" name="q15" value="B"> B. Liquid particles</label>
+<label><input type="radio" name="q15" value="C"> C. Gas particles</label>
+<label><input type="radio" name="q15" value="D"> D. All are identical</label>
+</div>
+
+<!-- 16 -->
+<div class="question" id="q16">
+<h3>16. Which tool measures temperature?</h3>
+<label><input type="radio" name="q16" value="A"> A. Balance</label>
+<label><input type="radio" name="q16" value="B"> B. Thermometer</label>
+<label><input type="radio" name="q16" value="C"> C. Ruler</label>
+<label><input type="radio" name="q16" value="D"> D. Stopwatch</label>
+</div>
+
+<!-- 17 -->
+<div class="question" id="q17">
+<h3>17. Which tool is commonly used to measure mass?</h3>
+<label><input type="radio" name="q17" value="A"> A. Balance</label>
+<label><input type="radio" name="q17" value="B"> B. Thermometer</label>
+<label><input type="radio" name="q17" value="C"> C. Ruler</label>
+<label><input type="radio" name="q17" value="D"> D. Graduated cylinder</label>
+</div>
+
+<!-- 18 -->
+<div class="question" id="q18">
+<h3>18. Which instrument measures the volume of a liquid?</h3>
+<label><input type="radio" name="q18" value="A"> A. Balance</label>
+<label><input type="radio" name="q18" value="B"> B. Stopwatch</label>
+<label><input type="radio" name="q18" value="C"> C. Graduated cylinder</label>
+<label><input type="radio" name="q18" value="D"> D. Thermometer</label>
+</div>
+
+<!-- 19 -->
+<div class="question" id="q19">
+<h3>19. Which tool is used to measure length?</h3>
+<label><input type="radio" name="q19" value="A"> A. Ruler</label>
+<label><input type="radio" name="q19" value="B"> B. Balance</label>
+<label><input type="radio" name="q19" value="C"> C. Thermometer</label>
+<label><input type="radio" name="q19" value="D"> D. Stopwatch</label>
+</div>
+
+<!-- 20 -->
+<div class="question" id="q20">
+<h3>20. Which instrument measures time?</h3>
+<label><input type="radio" name="q20" value="A"> A. Ruler</label>
+<label><input type="radio" name="q20" value="B"> B. Balance</label>
+<label><input type="radio" name="q20" value="C"> C. Stopwatch</label>
+<label><input type="radio" name="q20" value="D"> D. Graduated cylinder</label>
+</div>
+
+<!-- 21 -->
+<div class="question" id="q21">
+<h3>21. Which is a unit of length?</h3>
+<label><input type="radio" name="q21" value="A"> A. Gram</label>
+<label><input type="radio" name="q21" value="B"> B. Meter</label>
+<label><input type="radio" name="q21" value="C"> C. Liter</label>
+<label><input type="radio" name="q21" value="D"> D. Celsius</label>
+</div>
+
+<!-- 22 -->
+<div class="question" id="q22">
+<h3>22. Which is a unit of mass?</h3>
+<label><input type="radio" name="q22" value="A"> A. Gram</label>
+<label><input type="radio" name="q22" value="B"> B. Liter</label>
+<label><input type="radio" name="q22" value="C"> C. Meter</label>
+<label><input type="radio" name="q22" value="D"> D. Celsius</label>
+</div>
+
+<!-- 23 -->
+<div class="question" id="q23">
+<h3>23. Which is a unit of volume?</h3>
+<label><input type="radio" name="q23" value="A"> A. Kilogram</label>
+<label><input type="radio" name="q23" value="B"> B. Meter</label>
+<label><input type="radio" name="q23" value="C"> C. Liter</label>
+<label><input type="radio" name="q23" value="D"> D. Second</label>
+</div>
+
+<!-- 24 -->
+<div class="question" id="q24">
+<h3>24. Mass refers to:</h3>
+<label><input type="radio" name="q24" value="A"> A. The amount of space occupied</label>
+<label><input type="radio" name="q24" value="B"> B. The amount of matter</label>
+<label><input type="radio" name="q24" value="C"> C. Temperature</label>
+<label><input type="radio" name="q24" value="D"> D. Speed</label>
+</div>
+
+<!-- 25 -->
+<div class="question" id="q25">
+<h3>25. Volume refers to:</h3>
+<label><input type="radio" name="q25" value="A"> A. Amount of space occupied</label>
+<label><input type="radio" name="q25" value="B"> B. Amount of matter</label>
+<label><input type="radio" name="q25" value="C"> C. Temperature</label>
+<label><input type="radio" name="q25" value="D"> D. Force</label>
+</div>
+
+<!-- 26 -->
+<div class="question" id="q26">
+<h3>26. What is a solution?</h3>
+<label><input type="radio" name="q26" value="A"> A. A pure solid</label>
+<label><input type="radio" name="q26" value="B"> B. A homogeneous mixture</label>
+<label><input type="radio" name="q26" value="C"> C. A gas only</label>
+<label><input type="radio" name="q26" value="D"> D. A chemical element only</label>
+</div>
+
+<!-- 27 -->
+<div class="question" id="q27">
+<h3>27. What is the solute?</h3>
+<label><input type="radio" name="q27" value="A"> A. The substance being dissolved</label>
+<label><input type="radio" name="q27" value="B"> B. The container</label>
+<label><input type="radio" name="q27" value="C"> C. The measuring tool</label>
+<label><input type="radio" name="q27" value="D"> D. The temperature</label>
+</div>
+
+<!-- 28 -->
+<div class="question" id="q28">
+<h3>28. What is the solvent?</h3>
+<label><input type="radio" name="q28" value="A"> A. The substance being dissolved</label>
+<label><input type="radio" name="q28" value="B"> B. The substance that dissolves the solute</label>
+<label><input type="radio" name="q28" value="C"> C. The solid particles only</label>
+<label><input type="radio" name="q28" value="D"> D. The container</label>
+</div>
+
+<!-- 29 -->
+<div class="question" id="q29">
+<h3>29. In saltwater, what is the solute?</h3>
+<label><input type="radio" name="q29" value="A"> A. Water</label>
+<label><input type="radio" name="q29" value="B"> B. Salt</label>
+<label><input type="radio" name="q29" value="C"> C. Glass</label>
+<label><input type="radio" name="q29" value="D"> D. Air</label>
+</div>
+
+<!-- 30 -->
+<div class="question" id="q30">
+<h3>30. In saltwater, what is the solvent?</h3>
+<label><input type="radio" name="q30" value="A"> A. Salt</label>
+<label><input type="radio" name="q30" value="B"> B. Water</label>
+<label><input type="radio" name="q30" value="C"> C. Sodium</label>
+<label><input type="radio" name="q30" value="D"> D. Glass</label>
+</div>
+
+<!-- 31 -->
+<div class="question" id="q31">
+<h3>31. A homogeneous mixture has:</h3>
+<label><input type="radio" name="q31" value="A"> A. Uniform composition</label>
+<label><input type="radio" name="q31" value="B"> B. Only solids</label>
+<label><input type="radio" name="q31" value="C"> C. Visible layers in every case</label>
+<label><input type="radio" name="q31" value="D"> D. No particles</label>
+</div>
+
+<!-- 32 -->
+<div class="question" id="q32">
+<h3>32. What does concentration describe?</h3>
+<label><input type="radio" name="q32" value="A"> A. The color of a solution</label>
+<label><input type="radio" name="q32" value="B"> B. The amount of solute relative to a given amount of solution</label>
+<label><input type="radio" name="q32" value="C"> C. The temperature only</label>
+<label><input type="radio" name="q32" value="D"> D. The mass of the container only</label>
+</div>
+
+<!-- 33 -->
+<div class="question" id="q33">
+<h3>33. Which solution is more concentrated?</h3>
+<label><input type="radio" name="q33" value="A"> A. 5 g solute in 100 mL solution</label>
+<label><input type="radio" name="q33" value="B"> B. 20 g solute in 100 mL solution</label>
+<label><input type="radio" name="q33" value="C"> C. Both are always equal</label>
+<label><input type="radio" name="q33" value="D"> D. Neither is a solution</label>
+</div>
+
+<!-- 34 -->
+<div class="question" id="q34">
+<h3>34. A dilute solution contains:</h3>
+<label><input type="radio" name="q34" value="A"> A. Relatively little solute</label>
+<label><input type="radio" name="q34" value="B"> B. No solvent</label>
+<label><input type="radio" name="q34" value="C"> C. Only solid</label>
+<label><input type="radio" name="q34" value="D"> D. Maximum possible solute</label>
+</div>
+
+<!-- 35 -->
+<div class="question" id="q35">
+<h3>35. A concentrated solution contains:</h3>
+<label><input type="radio" name="q35" value="A"> A. Relatively large amount of solute</label>
+<label><input type="radio" name="q35" value="B"> B. No solute</label>
+<label><input type="radio" name="q35" value="C"> C. No solvent</label>
+<label><input type="radio" name="q35" value="D"> D. No particles</label>
+</div>
+
+<!-- 36 -->
+<div class="question" id="q36">
+<h3>36. Which formula calculates mass/volume percent?</h3>
+<label><input type="radio" name="q36" value="A"> A. Volume ÷ mass × 100</label>
+<label><input type="radio" name="q36" value="B"> B. Mass ÷ volume × 100</label>
+<label><input type="radio" name="q36" value="C"> C. Mass × volume</label>
+<label><input type="radio" name="q36" value="D"> D. Mass + volume</label>
+</div>
+
+<!-- 37 -->
+<div class="question" id="q37">
+<h3>37. What is the mass/volume percent of 10 g solute in 100 mL solution?</h3>
+<label><input type="radio" name="q37" value="A"> A. 1%</label>
+<label><input type="radio" name="q37" value="B"> B. 5%</label>
+<label><input type="radio" name="q37" value="C"> C. 10%</label>
+<label><input type="radio" name="q37" value="D"> D. 100%</label>
+</div>
+
+<!-- 38 -->
+<div class="question" id="q38">
+<h3>38. What is the mass/volume percent of 20 g solute in 200 mL solution?</h3>
+<label><input type="radio" name="q38" value="A"> A. 5%</label>
+<label><input type="radio" name="q38" value="B"> B. 10%</label>
+<label><input type="radio" name="q38" value="C"> C. 20%</label>
+<label><input type="radio" name="q38" value="D"> D. 40%</label>
+</div>
+
+<!-- 39 -->
+<div class="question" id="q39">
+<h3>39. What is the mass/volume percent of 15 g solute in 300 mL solution?</h3>
+<label><input type="radio" name="q39" value="A"> A. 3%</label>
+<label><input type="radio" name="q39" value="B"> B. 5%</label>
+<label><input type="radio" name="q39" value="C"> C. 15%</label>
+<label><input type="radio" name="q39" value="D"> D. 20%</label>
+</div>
+
+<!-- 40 -->
+<div class="question" id="q40">
+<h3>40. If the amount of solute increases while the solution volume stays the same, concentration generally:</h3>
+<label><input type="radio" name="q40" value="A"> A. Decreases</label>
+<label><input type="radio" name="q40" value="B"> B. Increases</label>
+<label><input type="radio" name="q40" value="C"> C. Becomes zero</label>
+<label><input type="radio" name="q40" value="D"> D. Does not exist</label>
+</div>
+
+<!-- 41 -->
+<div class="question" id="q41">
+<h3>41. Which is a physical property?</h3>
+<label><input type="radio" name="q41" value="A"> A. Flammability</label>
+<label><input type="radio" name="q41" value="B"> B. Color</label>
+<label><input type="radio" name="q41" value="C"> C. Reactivity</label>
+<label><input type="radio" name="q41" value="D"> D. Ability to rust</label>
+</div>
+
+<!-- 42 -->
+<div class="question" id="q42">
+<h3>42. Which is a chemical property?</h3>
+<label><input type="radio" name="q42" value="A"> A. Color</label>
+<label><input type="radio" name="q42" value="B"> B. Mass</label>
+<label><input type="radio" name="q42" value="C"> C. Flammability</label>
+<label><input type="radio" name="q42" value="D"> D. Volume</label>
+</div>
+
+<!-- 43 -->
+<div class="question" id="q43">
+<h3>43. Which property can be observed without changing a substance into a new substance?</h3>
+<label><input type="radio" name="q43" value="A"> A. Physical property</label>
+<label><input type="radio" name="q43" value="B"> B. Chemical property</label>
+<label><input type="radio" name="q43" value="C"> C. Chemical reaction</label>
+<label><input type="radio" name="q43" value="D"> D. Reactivity</label>
+</div>
+
+<!-- 44 -->
+<div class="question" id="q44">
+<h3>44. Which is NOT a physical property?</h3>
+<label><input type="radio" name="q44" value="A"> A. Melting point</label>
+<label><input type="radio" name="q44" value="B"> B. Density</label>
+<label><input type="radio" name="q44" value="C"> C. Flammability</label>
+<label><input type="radio" name="q44" value="D"> D. Color</label>
+</div>
+
+<!-- 45 -->
+<div class="question" id="q45">
+<h3>45. Which property describes how easily a substance burns?</h3>
+<label><input type="radio" name="q45" value="A"> A. Density</label>
+<label><input type="radio" name="q45" value="B"> B. Flammability</label>
+<label><input type="radio" name="q45" value="C"> C. Volume</label>
+<label><input type="radio" name="q45" value="D"> D. Mass</label>
+</div>
+
+<!-- 46 -->
+<div class="question" id="q46">
+<h3>46. Which is an example of a physical property?</h3>
+<label><input type="radio" name="q46" value="A"> A. Boiling point</label>
+<label><input type="radio" name="q46" value="B"> B. Reactivity with acid</label>
+<label><input type="radio" name="q46" value="C"> C. Flammability</label>
+<label><input type="radio" name="q46" value="D"> D. Ability to rust</label>
+</div>
+
+<!-- 47 -->
+<div class="question" id="q47">
+<h3>47. Which statement correctly compares physical and chemical properties?</h3>
+<label><input type="radio" name="q47" value="A"> A. Both always create new substances</label>
+<label><input type="radio" name="q47" value="B"> B. Physical properties can be observed without changing the substance's identity</label>
+<label><input type="radio" name="q47" value="C"> C. Chemical properties are always measurements of mass</label>
+<label><input type="radio" name="q47" value="D"> D. Physical properties only apply to liquids</label>
+</div>
+
+<!-- 48 -->
+<div class="question" id="q48">
+<h3>48. Density is considered a:</h3>
+<label><input type="radio" name="q48" value="A"> A. Physical property</label>
+<label><input type="radio" name="q48" value="B"> B. Chemical property</label>
+<label><input type="radio" name="q48" value="C"> C. Chemical reaction</label>
+<label><input type="radio" name="q48" value="D"> D. Solution</label>
+</div>
+
+<!-- 49 -->
+<div class="question" id="q49">
+<h3>49. Which combination is correct?</h3>
+<label><input type="radio" name="q49" value="A"> A. Solute = dissolves; solvent = gets dissolved</label>
+<label><input type="radio" name="q49" value="B"> B. Solute = gets dissolved; solvent = dissolves solute</label>
+<label><input type="radio" name="q49" value="C"> C. Solute = thermometer; solvent = balance</label>
+<label><input type="radio" name="q49" value="D"> D. Solute and solvent are always solids</label>
+</div>
+
+<!-- 50 -->
+<div class="question" id="q50">
+<h3>50. Which statement is correct about matter?</h3>
+<label><input type="radio" name="q50" value="A"> A. Matter has no properties</label>
+<label><input type="radio" name="q50" value="B"> B. Matter is made of particles</label>
+<label><input type="radio" name="q50" value="C"> C. Only solids contain particles</label>
+<label><input type="radio" name="q50" value="D"> D. Particles never move</label>
+</div>
+
+<button type="button" class="submit" onclick="gradeTest()">
+    SUBMIT TEST
 </button>
 
+</form>
+
+<div id="result"></div>
+
+</div>
 
 <script>
 
-/*
-===========================================================
-ELEMENTS
-===========================================================
-*/
+const answers = {
+    q1:"B",
+    q2:"A",
+    q3:"B",
+    q4:"B",
+    q5:"B",
+    q6:"B",
+    q7:"B",
+    q8:"A",
+    q9:"A",
+    q10:"B",
 
-const video =
-    document.getElementById("camera");
+    q11:"B",
+    q12:"C",
+    q13:"A",
+    q14:"B",
+    q15:"C",
+    q16:"B",
+    q17:"A",
+    q18:"C",
+    q19:"A",
+    q20:"C",
 
-const canvas =
-    document.getElementById("overlay");
+    q21:"B",
+    q22:"A",
+    q23:"C",
+    q24:"B",
+    q25:"A",
+    q26:"B",
+    q27:"A",
+    q28:"B",
+    q29:"B",
+    q30:"B",
 
-const ctx =
-    canvas.getContext("2d");
+    q31:"A",
+    q32:"B",
+    q33:"B",
+    q34:"A",
+    q35:"A",
+    q36:"B",
+    q37:"C",
+    q38:"B",
+    q39:"B",
+    q40:"B",
 
-const startButton =
-    document.getElementById("start");
+    q41:"B",
+    q42:"C",
+    q43:"A",
+    q44:"C",
+    q45:"B",
+    q46:"A",
+    q47:"B",
+    q48:"A",
+    q49:"B",
+    q50:"B"
+};
 
-const status =
-    document.getElementById("status");
+function gradeTest() {
 
-const results =
-    document.getElementById("results");
+    let score = 0;
+    let unanswered = 0;
 
-const fpsDisplay =
-    document.getElementById("fps");
+    for (let i = 1; i <= 50; i++) {
 
-
-/*
-===========================================================
-STATE
-===========================================================
-*/
-
-let faceDetector = null;
-
-let poseDetector = null;
-
-let cameraRunning = false;
-
-let processing = false;
-
-let lastProcess = 0;
-
-let faceResults = null;
-
-let poseResults = null;
-
-let detectedPeople = 0;
-
-let currentFPS = 0;
-
-let frames = 0;
-
-let fpsTime = performance.now();
-
-
-/*
-===========================================================
-TEMPORARY CANVAS
-===========================================================
-*/
-
-const sampleCanvas =
-    document.createElement("canvas");
-
-sampleCanvas.width = 80;
-sampleCanvas.height = 80;
-
-const sampleCtx =
-    sampleCanvas.getContext(
-        "2d",
-        {
-            willReadFrequently: true
-        }
-    );
-
-
-/*
-===========================================================
-START CAMERA
-===========================================================
-*/
-
-async function startCamera() {
-
-    try {
-
-        status.textContent =
-            "Requesting camera permission...";
-
-
-        const stream =
-            await navigator.mediaDevices.getUserMedia({
-
-                video: {
-
-                    facingMode: {
-                        ideal: "environment"
-                    },
-
-                    width: {
-                        ideal: 1280
-                    },
-
-                    height: {
-                        ideal: 720
-                    }
-
-                },
-
-                audio: false
-
-            });
-
-
-        video.srcObject =
-            stream;
-
-
-        await video.play();
-
-
-        canvas.width =
-            video.videoWidth;
-
-        canvas.height =
-            video.videoHeight;
-
-
-        status.textContent =
-            "Loading vision models...";
-
-
-        await loadModels();
-
-
-        status.textContent =
-            "SCANNER ACTIVE";
-
-
-        startButton.style.display =
-            "none";
-
-
-        cameraRunning = true;
-
-
-        requestAnimationFrame(
-            mainLoop
+        const question = document.getElementById("q" + i);
+        const selected = document.querySelector(
+            'input[name="q' + i + '"]:checked'
         );
 
-
-    } catch (error) {
-
-        console.error(error);
-
-        status.textContent =
-            "ERROR: " +
-            error.name;
-
-        results.textContent =
-            error.message;
-
-    }
-
-}
-
-
-/*
-===========================================================
-LOAD MEDIAPIPE
-===========================================================
-*/
-
-async function loadModels() {
-
-    /*
-    Face detector
-    */
-
-    faceDetector =
-        new FaceDetection({
-
-            locateFile: function(file) {
-
-                return (
-                    "https://cdn.jsdelivr.net/npm/" +
-                    "@mediapipe/face_detection/" +
-                    file
-                );
-
-            }
-
-        });
-
-
-    faceDetector.setOptions({
-
-        model: "short",
-
-        minDetectionConfidence:
-            0.55
-
-    });
-
-
-    faceDetector.onResults(
-        function(data) {
-
-            faceResults =
-                data;
-
-        }
-    );
-
-
-    /*
-    Pose detector
-    */
-
-    poseDetector =
-        new Pose({
-
-            locateFile: function(file) {
-
-                return (
-                    "https://cdn.jsdelivr.net/npm/" +
-                    "@mediapipe/pose/" +
-                    file
-                );
-
-            }
-
-        });
-
-
-    poseDetector.setOptions({
-
-        modelComplexity: 0,
-
-        smoothLandmarks: true,
-
-        enableSegmentation: true,
-
-        smoothSegmentation: true,
-
-        minDetectionConfidence:
-            0.5,
-
-        minTrackingConfidence:
-            0.5
-
-    });
-
-
-    poseDetector.onResults(
-        function(data) {
-
-            poseResults =
-                data;
-
-        }
-    );
-
-
-    /*
-    Force model initialization
-    */
-
-    await faceDetector.send({
-        image: video
-    });
-
-    await poseDetector.send({
-        image: video
-    });
-
-}
-
-
-/*
-===========================================================
-MAIN LOOP
-===========================================================
-*/
-
-async function mainLoop(time) {
-
-    if (!cameraRunning)
-        return;
-
-
-    requestAnimationFrame(
-        mainLoop
-    );
-
-
-    /*
-    Limit processing to approximately
-    10 frames/sec so mobile devices
-    don't get overloaded.
-    */
-
-    if (
-        processing ||
-        time - lastProcess < 100
-    ) {
-
-        return;
-
-    }
-
-
-    lastProcess =
-        time;
-
-    processing = true;
-
-
-    try {
-
-        await faceDetector.send({
-            image: video
-        });
-
-
-        await poseDetector.send({
-            image: video
-        });
-
-
-        drawEverything();
-
-
-        updateFPS();
-
-
-    } catch(error) {
-
-        console.error(error);
-
-    }
-
-
-    processing = false;
-
-}
-
-
-/*
-===========================================================
-DRAW EVERYTHING
-===========================================================
-*/
-
-function drawEverything() {
-
-    ctx.clearRect(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-    );
-
-
-    detectedPeople = 0;
-
-
-    /*
-    Draw faces
-    */
-
-    if (
-        faceResults &&
-        faceResults.detections
-    ) {
-
-        for (
-            const face
-            of faceResults.detections
-        ) {
-
-            drawFace(face);
-
-        }
-
-    }
-
-
-    /*
-    Draw body
-    */
-
-    if (
-        poseResults &&
-        poseResults.poseLandmarks
-    ) {
-
-        detectedPeople = 1;
-
-        drawBody(
-            poseResults.poseLandmarks
-        );
-
-    }
-
-
-    /*
-    Results panel
-    */
-
-    updateResults();
-
-}
-
-
-/*
-===========================================================
-FACE DETECTION
-===========================================================
-*/
-
-function drawFace(face) {
-
-    const box =
-        face.boundingBox;
-
-
-    if (!box)
-        return;
-
-
-    const x =
-        box.xCenter -
-        box.width / 2;
-
-    const y =
-        box.yCenter -
-        box.height / 2;
-
-    const w =
-        box.width;
-
-    const h =
-        box.height;
-
-
-    const px =
-        x * canvas.width;
-
-    const py =
-        y * canvas.height;
-
-    const pw =
-        w * canvas.width;
-
-    const ph =
-        h * canvas.height;
-
-
-    /*
-    Face box
-    */
-
-    ctx.strokeStyle =
-        "#ffffff";
-
-    ctx.lineWidth = 4;
-
-    ctx.strokeRect(
-        px,
-        py,
-        pw,
-        ph
-    );
-
-
-    /*
-    Face label
-    */
-
-    drawLabel(
-        px,
-        Math.max(
-            25,
-            py - 8
-        ),
-        "FACE"
-    );
-
-
-    /*
-    Face center
-    */
-
-    drawCrosshair(
-        px + pw / 2,
-        py + ph / 2,
-        "#ffffff"
-    );
-
-}
-
-
-/*
-===========================================================
-BODY
-===========================================================
-*/
-
-function drawBody(landmarks) {
-
-    /*
-    MediaPipe Pose landmark indexes:
-
-    11 left shoulder
-    12 right shoulder
-    23 left hip
-    24 right hip
-    25 left knee
-    26 right knee
-    */
-
-
-    const leftShoulder =
-        landmarks[11];
-
-    const rightShoulder =
-        landmarks[12];
-
-    const leftHip =
-        landmarks[23];
-
-    const rightHip =
-        landmarks[24];
-
-    const leftKnee =
-        landmarks[25];
-
-    const rightKnee =
-        landmarks[26];
-
-
-    if (
-        !visible(leftShoulder) ||
-        !visible(rightShoulder)
-    ) {
-
-        return;
-
-    }
-
-
-    /*
-    Convert landmarks
-    */
-
-    const ls =
-        point(leftShoulder);
-
-    const rs =
-        point(rightShoulder);
-
-    const lh =
-        point(leftHip);
-
-    const rh =
-        point(rightHip);
-
-
-    /*
-    Body dimensions
-    */
-
-    const shoulderWidth =
-        Math.abs(
-            ls.x - rs.x
-        );
-
-
-    /*
-    Torso region
-    */
-
-    const torsoLeft =
-        Math.min(
-            ls.x,
-            rs.x
-        ) -
-        shoulderWidth * 0.15;
-
-
-    const torsoRight =
-        Math.max(
-            ls.x,
-            rs.x
-        ) +
-        shoulderWidth * 0.15;
-
-
-    const torsoTop =
-        Math.min(
-            ls.y,
-            rs.y
-        );
-
-
-    const torsoBottom =
-        Math.max(
-            lh.y,
-            rh.y
-        );
-
-
-    const torsoWidth =
-        torsoRight -
-        torsoLeft;
-
-
-    const torsoHeight =
-        torsoBottom -
-        torsoTop;
-
-
-    if (
-        torsoWidth > 10 &&
-        torsoHeight > 10
-    ) {
-
-        drawClothingRegion(
-
-            torsoLeft,
-            torsoTop,
-
-            torsoWidth,
-            torsoHeight,
-
-            "TOP"
-
-        );
-
-    }
-
-
-    /*
-    Pants regions
-    */
-
-    if (
-        visible(leftHip) &&
-        visible(rightHip) &&
-        visible(leftKnee) &&
-        visible(rightKnee)
-    ) {
-
-        const lk =
-            point(leftKnee);
-
-        const rk =
-            point(rightKnee);
-
-
-        const legLeft =
-            Math.min(
-                lh.x,
-                rh.x,
-                lk.x,
-                rk.x
-            ) -
-            shoulderWidth * 0.08;
-
-
-        const legRight =
-            Math.max(
-                lh.x,
-                rh.x,
-                lk.x,
-                rk.x
-            ) +
-            shoulderWidth * 0.08;
-
-
-        const legTop =
-            Math.min(
-                lh.y,
-                rh.y
-            );
-
-
-        const legBottom =
-            Math.max(
-                lk.y,
-                rk.y
-            );
-
-
-        drawClothingRegion(
-
-            legLeft,
-            legTop,
-
-            legRight - legLeft,
-            legBottom - legTop,
-
-            "LOWER BODY"
-
-        );
-
-    }
-
-
-    /*
-    Draw skeleton
-    */
-
-    drawSkeleton(
-        landmarks
-    );
-
-}
-
-
-/*
-===========================================================
-CLOTHING REGION
-===========================================================
-*/
-
-function drawClothingRegion(
-    x,
-    y,
-    w,
-    h,
-    label
-) {
-
-    const px =
-        x * canvas.width;
-
-    const py =
-        y * canvas.height;
-
-    const pw =
-        w * canvas.width;
-
-    const ph =
-        h * canvas.height;
-
-
-    if (
-        pw < 10 ||
-        ph < 10
-    ) {
-
-        return;
-
-    }
-
-
-    const color =
-        sampleColor(
-            px,
-            py,
-            pw,
-            ph
-        );
-
-
-    /*
-    Region box
-    */
-
-    ctx.strokeStyle =
-        color.hex;
-
-    ctx.lineWidth = 4;
-
-    ctx.strokeRect(
-        px,
-        py,
-        pw,
-        ph
-    );
-
-
-    /*
-    Label
-    */
-
-    drawLabel(
-
-        px,
-
-        Math.min(
-            canvas.height - 5,
-            py + 20
-        ),
-
-        label +
-        " • " +
-        color.name
-
-    );
-
-
-    /*
-    Center marker
-    */
-
-    drawCrosshair(
-
-        px + pw / 2,
-        py + ph / 2,
-
-        color.hex
-
-    );
-
-}
-
-
-/*
-===========================================================
-COLOR SAMPLING
-===========================================================
-*/
-
-function sampleColor(
-    x,
-    y,
-    w,
-    h
-) {
-
-    /*
-    Keep the sample inside
-    the camera.
-    */
-
-    x =
-        Math.max(
-            0,
-            Math.min(
-                x,
-                canvas.width - 1
-            )
-        );
-
-
-    y =
-        Math.max(
-            0,
-            Math.min(
-                y,
-                canvas.height - 1
-            )
-        );
-
-
-    w =
-        Math.min(
-            w,
-            canvas.width - x
-        );
-
-
-    h =
-        Math.min(
-            h,
-            canvas.height - y
-        );
-
-
-    sampleCtx.clearRect(
-        0,
-        0,
-        80,
-        80
-    );
-
-
-    sampleCtx.drawImage(
-
-        video,
-
-        x,
-        y,
-        w,
-        h,
-
-        0,
-        0,
-        80,
-        80
-
-    );
-
-
-    const data =
-        sampleCtx.getImageData(
-            0,
-            0,
-            80,
-            80
-        ).data;
-
-
-    let r = 0;
-    let g = 0;
-    let b = 0;
-
-    let count = 0;
-
-
-    /*
-    Sample every 4th pixel.
-    */
-
-    for (
-        let i = 0;
-        i < data.length;
-        i += 16
-    ) {
-
-        const R =
-            data[i];
-
-        const G =
-            data[i + 1];
-
-        const B =
-            data[i + 2];
-
-
-        /*
-        Ignore nearly-black pixels.
-        */
-
-        if (
-            R < 20 &&
-            G < 20 &&
-            B < 20
-        ) {
-
+        question.classList.remove("correct", "wrong", "unanswered");
+
+        if (!selected) {
+            unanswered++;
+            question.classList.add("unanswered");
             continue;
-
         }
 
-
-        r += R;
-        g += G;
-        b += B;
-
-        count++;
-
-    }
-
-
-    if (count === 0) {
-
-        return {
-            name: "UNKNOWN",
-            hex: "#ffffff"
-        };
-
-    }
-
-
-    r /= count;
-    g /= count;
-    b /= count;
-
-
-    return classifyColor(
-        r,
-        g,
-        b
-    );
-
-}
-
-
-/*
-===========================================================
-COLOR CLASSIFIER
-===========================================================
-*/
-
-function classifyColor(
-    r,
-    g,
-    b
-) {
-
-    const max =
-        Math.max(
-            r,
-            g,
-            b
-        );
-
-
-    const min =
-        Math.min(
-            r,
-            g,
-            b
-        );
-
-
-    /*
-    BLACK
-    */
-
-    if (max < 55) {
-
-        return {
-            name: "BLACK",
-            hex: "#555555"
-        };
-
-    }
-
-
-    /*
-    WHITE
-    */
-
-    if (
-        min > 185 &&
-        max - min < 45
-    ) {
-
-        return {
-            name: "WHITE",
-            hex: "#ffffff"
-        };
-
-    }
-
-
-    /*
-    GRAY
-    */
-
-    if (
-        max - min < 30
-    ) {
-
-        return {
-            name: "GRAY",
-            hex: "#aaaaaa"
-        };
-
-    }
-
-
-    /*
-    RED
-    */
-
-    if (
-        r > g * 1.35 &&
-        r > b * 1.35
-    ) {
-
-        return {
-            name: "RED",
-            hex: "#ff3030"
-        };
-
-    }
-
-
-    /*
-    GREEN
-    */
-
-    if (
-        g > r * 1.25 &&
-        g > b * 1.15
-    ) {
-
-        return {
-            name: "GREEN",
-            hex: "#00ff66"
-        };
-
-    }
-
-
-    /*
-    BLUE
-    */
-
-    if (
-        b > r * 1.25 &&
-        b > g * 1.10
-    ) {
-
-        return {
-            name: "BLUE",
-            hex: "#3399ff"
-        };
-
-    }
-
-
-    /*
-    YELLOW
-    */
-
-    if (
-        r > 130 &&
-        g > 110 &&
-        b < 90
-    ) {
-
-        return {
-            name: "YELLOW",
-            hex: "#ffff00"
-        };
-
-    }
-
-
-    /*
-    ORANGE
-    */
-
-    if (
-        r > 150 &&
-        g > 65 &&
-        g < r * 0.8 &&
-        b < 90
-    ) {
-
-        return {
-            name: "ORANGE",
-            hex: "#ff8800"
-        };
-
-    }
-
-
-    /*
-    PURPLE
-    */
-
-    if (
-        r > 80 &&
-        b > 80 &&
-        g < r * 0.8 &&
-        g < b * 0.8
-    ) {
-
-        return {
-            name: "PURPLE",
-            hex: "#bb66ff"
-        };
-
-    }
-
-
-    /*
-    CYAN
-    */
-
-    if (
-        g > r * 1.15 &&
-        b > r * 1.15
-    ) {
-
-        return {
-            name: "CYAN",
-            hex: "#00ffff"
-        };
-
-    }
-
-
-    return {
-
-        name: "MIXED",
-
-        hex:
-            "rgb(" +
-            Math.round(r) +
-            "," +
-            Math.round(g) +
-            "," +
-            Math.round(b) +
-            ")"
-
-    };
-
-}
-
-
-/*
-===========================================================
-SKELETON
-===========================================================
-*/
-
-function drawSkeleton(
-    landmarks
-) {
-
-    const connections = [
-
-        [11,12],
-
-        [11,13],
-        [13,15],
-
-        [12,14],
-        [14,16],
-
-        [11,23],
-        [12,24],
-
-        [23,24],
-
-        [23,25],
-        [25,27],
-
-        [24,26],
-        [26,28]
-
-    ];
-
-
-    ctx.strokeStyle =
-        "rgba(0,255,255,.65)";
-
-    ctx.lineWidth = 2;
-
-
-    for (
-        const pair
-        of connections
-    ) {
-
-        const a =
-            landmarks[pair[0]];
-
-        const b =
-            landmarks[pair[1]];
-
-
-        if (
-            !visible(a) ||
-            !visible(b)
-        ) {
-
-            continue;
-
+        if (selected.value === answers["q" + i]) {
+            score++;
+            question.classList.add("correct");
+        } else {
+            question.classList.add("wrong");
         }
-
-
-        const pa =
-            point(a);
-
-        const pb =
-            point(b);
-
-
-        ctx.beginPath();
-
-        ctx.moveTo(
-            pa.x * canvas.width,
-            pa.y * canvas.height
-        );
-
-        ctx.lineTo(
-            pb.x * canvas.width,
-            pb.y * canvas.height
-        );
-
-        ctx.stroke();
-
     }
 
-}
+    let percentage = (score / 50) * 100;
 
+    let message = "";
 
-/*
-===========================================================
-LANDMARK HELPERS
-===========================================================
-*/
-
-function visible(
-    landmark
-) {
-
-    return (
-        landmark &&
-        landmark.visibility !== undefined &&
-        landmark.visibility > 0.45
-    );
-
-}
-
-
-function point(
-    landmark
-) {
-
-    return {
-
-        x: landmark.x,
-
-        y: landmark.y
-
-    };
-
-}
-
-
-/*
-===========================================================
-CROSSHAIR
-===========================================================
-*/
-
-function drawCrosshair(
-    x,
-    y,
-    color
-) {
-
-    ctx.strokeStyle =
-        color;
-
-    ctx.lineWidth = 2;
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-        x - 10,
-        y
-    );
-
-    ctx.lineTo(
-        x + 10,
-        y
-    );
-
-    ctx.moveTo(
-        x,
-        y - 10
-    );
-
-    ctx.lineTo(
-        x,
-        y + 10
-    );
-
-    ctx.stroke();
-
-}
-
-
-/*
-===========================================================
-LABEL
-===========================================================
-*/
-
-function drawLabel(
-    x,
-    y,
-    text
-) {
-
-    ctx.font =
-        "bold 14px Arial";
-
-
-    const width =
-        ctx.measureText(text).width +
-        12;
-
-
-    ctx.fillStyle =
-        "rgba(0,0,0,.75)";
-
-
-    ctx.fillRect(
-        x,
-        y - 20,
-        width,
-        24
-    );
-
-
-    ctx.fillStyle =
-        "white";
-
-
-    ctx.fillText(
-        text,
-        x + 6,
-        y - 3
-    );
-
-}
-
-
-/*
-===========================================================
-RESULT PANEL
-===========================================================
-*/
-
-function updateResults() {
-
-    let text = "";
-
-
-    if (
-        faceResults &&
-        faceResults.detections
-    ) {
-
-        text +=
-            "Faces: " +
-            faceResults.detections.length;
-
+    if (score >= 45) {
+        message = "Excellent";
+    } else if (score >= 40) {
+        message = "Very Good";
+    } else if (score >= 35) {
+        message = "Good";
+    } else if (score >= 30) {
+        message = "Needs Review";
     } else {
-
-        text +=
-            "Faces: 0";
-
+        message = "Study the reviewer and try again";
     }
 
+    const result = document.getElementById("result");
 
-    text +=
-        " | Bodies: " +
-        detectedPeople;
+    result.style.display = "block";
 
+    result.innerHTML = `
+        <div class="score">${score} / 50</div>
+        <p>Percentage: ${percentage}%</p>
+        <p>${message}</p>
+        <p>Unanswered: ${unanswered}</p>
+        <p class="answer">
+            Green = correct<br>
+            Red = incorrect<br>
+            Yellow = unanswered
+        </p>
+    `;
 
-    if (
-        poseResults &&
-        poseResults.poseLandmarks
-    ) {
-
-        const lm =
-            poseResults.poseLandmarks;
-
-
-        if (
-            lm[11] &&
-            lm[12] &&
-            lm[23] &&
-            lm[24]
-        ) {
-
-            const topColor =
-                sampleColor(
-
-                    Math.min(
-                        lm[11].x,
-                        lm[12].x
-                    ) * canvas.width,
-
-                    Math.min(
-                        lm[11].y,
-                        lm[12].y
-                    ) * canvas.height,
-
-                    Math.abs(
-                        lm[11].x -
-                        lm[12].x
-                    ) * canvas.width,
-
-                    Math.abs(
-                        (
-                            lm[23].y +
-                            lm[24].y
-                        ) / 2 -
-                        (
-                            lm[11].y +
-                            lm[12].y
-                        ) / 2
-                    ) * canvas.height
-
-                );
-
-
-            text +=
-                "<br>Top color: " +
-                topColor.name;
-
-        }
-
-    }
-
-
-    results.innerHTML =
-        text;
-
+    window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: "smooth"
+    });
 }
-
-
-/*
-===========================================================
-FPS
-===========================================================
-*/
-
-function updateFPS() {
-
-    frames++;
-
-
-    const now =
-        performance.now();
-
-
-    if (
-        now - fpsTime >= 1000
-    ) {
-
-        currentFPS =
-            frames;
-
-
-        frames = 0;
-
-        fpsTime =
-            now;
-
-
-        fpsDisplay.textContent =
-            currentFPS +
-            " FPS";
-
-    }
-
-}
-
-
-/*
-===========================================================
-START BUTTON
-===========================================================
-*/
-
-startButton.addEventListener(
-    "click",
-    startCamera
-);
 
 </script>
 
