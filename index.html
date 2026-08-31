@@ -1,203 +1,571 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
 
-<title>Camera Object Scanner</title>
+<meta name="viewport"
+      content="width=device-width,
+               initial-scale=1.0,
+               maximum-scale=1.0,
+               user-scalable=no">
 
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+<title>Vision Scanner</title>
+
+<!-- MediaPipe Face Detection -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js"></script>
+
+<!-- MediaPipe Pose -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
 
 <style>
-html,body {
-    margin:0;
-    width:100%;
-    height:100%;
-    overflow:hidden;
-    background:#000;
+
+* {
+    box-sizing: border-box;
 }
 
-#video {
-    position:fixed;
-    inset:0;
-    width:100%;
-    height:100%;
-    object-fit:cover;
+html,
+body {
+
+    margin: 0;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: hidden;
+
+    background: #000;
+
+    font-family:
+        Arial,
+        sans-serif;
 }
 
-#canvas {
-    position:fixed;
-    inset:0;
-    width:100%;
-    height:100%;
+#camera {
+
+    position: fixed;
+
+    left: 0;
+    top: 0;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    background: #000;
+}
+
+#overlay {
+
+    position: fixed;
+
+    left: 0;
+    top: 0;
+
+    width: 100%;
+    height: 100%;
+
+    pointer-events: none;
+}
+
+#panel {
+
+    position: fixed;
+
+    left: 10px;
+    right: 10px;
+    top: 10px;
+
+    z-index: 20;
+
+    padding: 12px;
+
+    border-radius: 12px;
+
+    background:
+        rgba(0,0,0,.72);
+
+    color: white;
+
+    backdrop-filter:
+        blur(8px);
+}
+
+#title {
+
+    font-size: 18px;
+
+    font-weight: bold;
+
+    margin-bottom: 5px;
 }
 
 #status {
-    position:fixed;
-    top:15px;
-    left:15px;
-    z-index:10;
 
-    background:rgba(0,0,0,.7);
-    color:white;
+    font-size: 13px;
 
-    padding:10px;
-    border-radius:8px;
-
-    font-family:Arial;
+    opacity: .85;
 }
+
+#results {
+
+    margin-top: 7px;
+
+    font-size: 13px;
+
+    line-height: 1.5;
+}
+
+#start {
+
+    position: fixed;
+
+    left: 50%;
+    top: 50%;
+
+    transform:
+        translate(-50%,-50%);
+
+    z-index: 50;
+
+    border: none;
+
+    border-radius: 12px;
+
+    padding: 16px 25px;
+
+    font-size: 17px;
+
+    font-weight: bold;
+
+    background: white;
+
+    color: black;
+}
+
+#fps {
+
+    position: fixed;
+
+    right: 10px;
+    bottom: 10px;
+
+    z-index: 20;
+
+    padding: 7px 10px;
+
+    border-radius: 8px;
+
+    background:
+        rgba(0,0,0,.65);
+
+    color: white;
+
+    font-family: monospace;
+
+    font-size: 12px;
+}
+
 </style>
+
 </head>
 
 <body>
 
-<video id="video" autoplay playsinline></video>
-<canvas id="canvas"></canvas>
+<video
+    id="camera"
+    autoplay
+    playsinline>
+</video>
 
-<div id="status">
-Loading...
+<canvas id="overlay"></canvas>
+
+<div id="panel">
+
+    <div id="title">
+        VISION SCANNER
+    </div>
+
+    <div id="status">
+        Camera inactive
+    </div>
+
+    <div id="results">
+        Waiting...
+    </div>
+
 </div>
+
+<div id="fps">
+    0 FPS
+</div>
+
+<button id="start">
+    START CAMERA
+</button>
+
 
 <script>
 
+/*
+===========================================================
+ELEMENTS
+===========================================================
+*/
+
 const video =
-    document.getElementById("video");
+    document.getElementById("camera");
 
 const canvas =
-    document.getElementById("canvas");
+    document.getElementById("overlay");
 
 const ctx =
     canvas.getContext("2d");
 
+const startButton =
+    document.getElementById("start");
+
 const status =
     document.getElementById("status");
 
-let model;
+const results =
+    document.getElementById("results");
+
+const fpsDisplay =
+    document.getElementById("fps");
 
 
-/* =========================
-   CAMERA
-========================= */
+/*
+===========================================================
+STATE
+===========================================================
+*/
+
+let faceDetector = null;
+
+let poseDetector = null;
+
+let cameraRunning = false;
+
+let processing = false;
+
+let lastProcess = 0;
+
+let faceResults = null;
+
+let poseResults = null;
+
+let detectedPeople = 0;
+
+let currentFPS = 0;
+
+let frames = 0;
+
+let fpsTime = performance.now();
+
+
+/*
+===========================================================
+TEMPORARY CANVAS
+===========================================================
+*/
+
+const sampleCanvas =
+    document.createElement("canvas");
+
+sampleCanvas.width = 80;
+sampleCanvas.height = 80;
+
+const sampleCtx =
+    sampleCanvas.getContext(
+        "2d",
+        {
+            willReadFrequently: true
+        }
+    );
+
+
+/*
+===========================================================
+START CAMERA
+===========================================================
+*/
 
 async function startCamera() {
 
-    const stream =
-        await navigator.mediaDevices.getUserMedia({
+    try {
 
-            video: {
-                facingMode:"environment",
-                width:{ideal:1280},
-                height:{ideal:720}
-            },
-
-            audio:false
-        });
-
-    video.srcObject = stream;
-
-    await video.play();
-
-    canvas.width =
-        video.videoWidth;
-
-    canvas.height =
-        video.videoHeight;
-}
+        status.textContent =
+            "Requesting camera permission...";
 
 
-/* =========================
-   COLOR
-========================= */
+        const stream =
+            await navigator.mediaDevices.getUserMedia({
 
-function getColor(x,y,w,h) {
+                video: {
 
-    const temp =
-        document.createElement("canvas");
+                    facingMode: {
+                        ideal: "environment"
+                    },
 
-    temp.width = 30;
-    temp.height = 30;
+                    width: {
+                        ideal: 1280
+                    },
 
-    const t =
-        temp.getContext("2d");
+                    height: {
+                        ideal: 720
+                    }
 
-    t.drawImage(
-        video,
-        x,y,w,h,
-        0,0,30,30
-    );
+                },
 
-    const data =
-        t.getImageData(
-            0,0,30,30
-        ).data;
+                audio: false
 
-    let r=0;
-    let g=0;
-    let b=0;
-    let count=0;
+            });
 
-    for(let i=0;i<data.length;i+=4){
 
-        const R=data[i];
-        const G=data[i+1];
-        const B=data[i+2];
+        video.srcObject =
+            stream;
 
-        r+=R;
-        g+=G;
-        b+=B;
 
-        count++;
+        await video.play();
+
+
+        canvas.width =
+            video.videoWidth;
+
+        canvas.height =
+            video.videoHeight;
+
+
+        status.textContent =
+            "Loading vision models...";
+
+
+        await loadModels();
+
+
+        status.textContent =
+            "SCANNER ACTIVE";
+
+
+        startButton.style.display =
+            "none";
+
+
+        cameraRunning = true;
+
+
+        requestAnimationFrame(
+            mainLoop
+        );
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        status.textContent =
+            "ERROR: " +
+            error.name;
+
+        results.textContent =
+            error.message;
+
     }
 
-    r/=count;
-    g/=count;
-    b/=count;
-
-
-    if(r<60 && g<60 && b<60)
-        return "BLACK";
-
-    if(r>190 && g>190 && b>190)
-        return "WHITE";
-
-    if(g>r*1.25 && g>b*1.15)
-        return "GREEN";
-
-    if(r>g*1.3 && r>b*1.3)
-        return "RED";
-
-    if(b>r*1.25 && b>g*1.1)
-        return "BLUE";
-
-    if(r>150 && g>120 && b<100)
-        return "YELLOW";
-
-    if(r>150 && g>70 && b<80)
-        return "ORANGE";
-
-    if(r>90 && b>90 && g<80)
-        return "PURPLE";
-
-    if(
-        Math.abs(r-g)<25 &&
-        Math.abs(g-b)<25
-    )
-        return "GRAY";
-
-    return "MIXED";
 }
 
 
-/* =========================
-   DETECTION
-========================= */
+/*
+===========================================================
+LOAD MEDIAPIPE
+===========================================================
+*/
 
-async function detect() {
+async function loadModels() {
 
-    const predictions =
-        await model.detect(video);
+    /*
+    Face detector
+    */
 
+    faceDetector =
+        new FaceDetection({
+
+            locateFile: function(file) {
+
+                return (
+                    "https://cdn.jsdelivr.net/npm/" +
+                    "@mediapipe/face_detection/" +
+                    file
+                );
+
+            }
+
+        });
+
+
+    faceDetector.setOptions({
+
+        model: "short",
+
+        minDetectionConfidence:
+            0.55
+
+    });
+
+
+    faceDetector.onResults(
+        function(data) {
+
+            faceResults =
+                data;
+
+        }
+    );
+
+
+    /*
+    Pose detector
+    */
+
+    poseDetector =
+        new Pose({
+
+            locateFile: function(file) {
+
+                return (
+                    "https://cdn.jsdelivr.net/npm/" +
+                    "@mediapipe/pose/" +
+                    file
+                );
+
+            }
+
+        });
+
+
+    poseDetector.setOptions({
+
+        modelComplexity: 0,
+
+        smoothLandmarks: true,
+
+        enableSegmentation: true,
+
+        smoothSegmentation: true,
+
+        minDetectionConfidence:
+            0.5,
+
+        minTrackingConfidence:
+            0.5
+
+    });
+
+
+    poseDetector.onResults(
+        function(data) {
+
+            poseResults =
+                data;
+
+        }
+    );
+
+
+    /*
+    Force model initialization
+    */
+
+    await faceDetector.send({
+        image: video
+    });
+
+    await poseDetector.send({
+        image: video
+    });
+
+}
+
+
+/*
+===========================================================
+MAIN LOOP
+===========================================================
+*/
+
+async function mainLoop(time) {
+
+    if (!cameraRunning)
+        return;
+
+
+    requestAnimationFrame(
+        mainLoop
+    );
+
+
+    /*
+    Limit processing to approximately
+    10 frames/sec so mobile devices
+    don't get overloaded.
+    */
+
+    if (
+        processing ||
+        time - lastProcess < 100
+    ) {
+
+        return;
+
+    }
+
+
+    lastProcess =
+        time;
+
+    processing = true;
+
+
+    try {
+
+        await faceDetector.send({
+            image: video
+        });
+
+
+        await poseDetector.send({
+            image: video
+        });
+
+
+        drawEverything();
+
+
+        updateFPS();
+
+
+    } catch(error) {
+
+        console.error(error);
+
+    }
+
+
+    processing = false;
+
+}
+
+
+/*
+===========================================================
+DRAW EVERYTHING
+===========================================================
+*/
+
+function drawEverything() {
 
     ctx.clearRect(
         0,
@@ -207,217 +575,1196 @@ async function detect() {
     );
 
 
-    let found = 0;
+    detectedPeople = 0;
 
 
-    for(const p of predictions) {
+    /*
+    Draw faces
+    */
 
-        if(p.score < 0.45)
-            continue;
+    if (
+        faceResults &&
+        faceResults.detections
+    ) {
 
+        for (
+            const face
+            of faceResults.detections
+        ) {
 
-        const [
-            x,
-            y,
-            w,
-            h
-        ] = p.bbox;
+            drawFace(face);
 
+        }
 
-        /*
-        PERSON
-        */
-
-        if(p.class === "person") {
-
-            found++;
+    }
 
 
-            /*
-            Person box
-            */
+    /*
+    Draw body
+    */
 
-            ctx.strokeStyle =
-                "#00ff00";
+    if (
+        poseResults &&
+        poseResults.poseLandmarks
+    ) {
 
-            ctx.lineWidth = 4;
+        detectedPeople = 1;
 
-            ctx.strokeRect(
-                x,y,w,h
+        drawBody(
+            poseResults.poseLandmarks
+        );
+
+    }
+
+
+    /*
+    Results panel
+    */
+
+    updateResults();
+
+}
+
+
+/*
+===========================================================
+FACE DETECTION
+===========================================================
+*/
+
+function drawFace(face) {
+
+    const box =
+        face.boundingBox;
+
+
+    if (!box)
+        return;
+
+
+    const x =
+        box.xCenter -
+        box.width / 2;
+
+    const y =
+        box.yCenter -
+        box.height / 2;
+
+    const w =
+        box.width;
+
+    const h =
+        box.height;
+
+
+    const px =
+        x * canvas.width;
+
+    const py =
+        y * canvas.height;
+
+    const pw =
+        w * canvas.width;
+
+    const ph =
+        h * canvas.height;
+
+
+    /*
+    Face box
+    */
+
+    ctx.strokeStyle =
+        "#ffffff";
+
+    ctx.lineWidth = 4;
+
+    ctx.strokeRect(
+        px,
+        py,
+        pw,
+        ph
+    );
+
+
+    /*
+    Face label
+    */
+
+    drawLabel(
+        px,
+        Math.max(
+            25,
+            py - 8
+        ),
+        "FACE"
+    );
+
+
+    /*
+    Face center
+    */
+
+    drawCrosshair(
+        px + pw / 2,
+        py + ph / 2,
+        "#ffffff"
+    );
+
+}
+
+
+/*
+===========================================================
+BODY
+===========================================================
+*/
+
+function drawBody(landmarks) {
+
+    /*
+    MediaPipe Pose landmark indexes:
+
+    11 left shoulder
+    12 right shoulder
+    23 left hip
+    24 right hip
+    25 left knee
+    26 right knee
+    */
+
+
+    const leftShoulder =
+        landmarks[11];
+
+    const rightShoulder =
+        landmarks[12];
+
+    const leftHip =
+        landmarks[23];
+
+    const rightHip =
+        landmarks[24];
+
+    const leftKnee =
+        landmarks[25];
+
+    const rightKnee =
+        landmarks[26];
+
+
+    if (
+        !visible(leftShoulder) ||
+        !visible(rightShoulder)
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+    Convert landmarks
+    */
+
+    const ls =
+        point(leftShoulder);
+
+    const rs =
+        point(rightShoulder);
+
+    const lh =
+        point(leftHip);
+
+    const rh =
+        point(rightHip);
+
+
+    /*
+    Body dimensions
+    */
+
+    const shoulderWidth =
+        Math.abs(
+            ls.x - rs.x
+        );
+
+
+    /*
+    Torso region
+    */
+
+    const torsoLeft =
+        Math.min(
+            ls.x,
+            rs.x
+        ) -
+        shoulderWidth * 0.15;
+
+
+    const torsoRight =
+        Math.max(
+            ls.x,
+            rs.x
+        ) +
+        shoulderWidth * 0.15;
+
+
+    const torsoTop =
+        Math.min(
+            ls.y,
+            rs.y
+        );
+
+
+    const torsoBottom =
+        Math.max(
+            lh.y,
+            rh.y
+        );
+
+
+    const torsoWidth =
+        torsoRight -
+        torsoLeft;
+
+
+    const torsoHeight =
+        torsoBottom -
+        torsoTop;
+
+
+    if (
+        torsoWidth > 10 &&
+        torsoHeight > 10
+    ) {
+
+        drawClothingRegion(
+
+            torsoLeft,
+            torsoTop,
+
+            torsoWidth,
+            torsoHeight,
+
+            "TOP"
+
+        );
+
+    }
+
+
+    /*
+    Pants regions
+    */
+
+    if (
+        visible(leftHip) &&
+        visible(rightHip) &&
+        visible(leftKnee) &&
+        visible(rightKnee)
+    ) {
+
+        const lk =
+            point(leftKnee);
+
+        const rk =
+            point(rightKnee);
+
+
+        const legLeft =
+            Math.min(
+                lh.x,
+                rh.x,
+                lk.x,
+                rk.x
+            ) -
+            shoulderWidth * 0.08;
+
+
+        const legRight =
+            Math.max(
+                lh.x,
+                rh.x,
+                lk.x,
+                rk.x
+            ) +
+            shoulderWidth * 0.08;
+
+
+        const legTop =
+            Math.min(
+                lh.y,
+                rh.y
             );
 
 
-            /*
-            Person label
-            */
+        const legBottom =
+            Math.max(
+                lk.y,
+                rk.y
+            );
 
-            const color =
-                getColor(
-                    x,
-                    y + h*0.30,
-                    w,
-                    h*0.45
+
+        drawClothingRegion(
+
+            legLeft,
+            legTop,
+
+            legRight - legLeft,
+            legBottom - legTop,
+
+            "LOWER BODY"
+
+        );
+
+    }
+
+
+    /*
+    Draw skeleton
+    */
+
+    drawSkeleton(
+        landmarks
+    );
+
+}
+
+
+/*
+===========================================================
+CLOTHING REGION
+===========================================================
+*/
+
+function drawClothingRegion(
+    x,
+    y,
+    w,
+    h,
+    label
+) {
+
+    const px =
+        x * canvas.width;
+
+    const py =
+        y * canvas.height;
+
+    const pw =
+        w * canvas.width;
+
+    const ph =
+        h * canvas.height;
+
+
+    if (
+        pw < 10 ||
+        ph < 10
+    ) {
+
+        return;
+
+    }
+
+
+    const color =
+        sampleColor(
+            px,
+            py,
+            pw,
+            ph
+        );
+
+
+    /*
+    Region box
+    */
+
+    ctx.strokeStyle =
+        color.hex;
+
+    ctx.lineWidth = 4;
+
+    ctx.strokeRect(
+        px,
+        py,
+        pw,
+        ph
+    );
+
+
+    /*
+    Label
+    */
+
+    drawLabel(
+
+        px,
+
+        Math.min(
+            canvas.height - 5,
+            py + 20
+        ),
+
+        label +
+        " • " +
+        color.name
+
+    );
+
+
+    /*
+    Center marker
+    */
+
+    drawCrosshair(
+
+        px + pw / 2,
+        py + ph / 2,
+
+        color.hex
+
+    );
+
+}
+
+
+/*
+===========================================================
+COLOR SAMPLING
+===========================================================
+*/
+
+function sampleColor(
+    x,
+    y,
+    w,
+    h
+) {
+
+    /*
+    Keep the sample inside
+    the camera.
+    */
+
+    x =
+        Math.max(
+            0,
+            Math.min(
+                x,
+                canvas.width - 1
+            )
+        );
+
+
+    y =
+        Math.max(
+            0,
+            Math.min(
+                y,
+                canvas.height - 1
+            )
+        );
+
+
+    w =
+        Math.min(
+            w,
+            canvas.width - x
+        );
+
+
+    h =
+        Math.min(
+            h,
+            canvas.height - y
+        );
+
+
+    sampleCtx.clearRect(
+        0,
+        0,
+        80,
+        80
+    );
+
+
+    sampleCtx.drawImage(
+
+        video,
+
+        x,
+        y,
+        w,
+        h,
+
+        0,
+        0,
+        80,
+        80
+
+    );
+
+
+    const data =
+        sampleCtx.getImageData(
+            0,
+            0,
+            80,
+            80
+        ).data;
+
+
+    let r = 0;
+    let g = 0;
+    let b = 0;
+
+    let count = 0;
+
+
+    /*
+    Sample every 4th pixel.
+    */
+
+    for (
+        let i = 0;
+        i < data.length;
+        i += 16
+    ) {
+
+        const R =
+            data[i];
+
+        const G =
+            data[i + 1];
+
+        const B =
+            data[i + 2];
+
+
+        /*
+        Ignore nearly-black pixels.
+        */
+
+        if (
+            R < 20 &&
+            G < 20 &&
+            B < 20
+        ) {
+
+            continue;
+
+        }
+
+
+        r += R;
+        g += G;
+        b += B;
+
+        count++;
+
+    }
+
+
+    if (count === 0) {
+
+        return {
+            name: "UNKNOWN",
+            hex: "#ffffff"
+        };
+
+    }
+
+
+    r /= count;
+    g /= count;
+    b /= count;
+
+
+    return classifyColor(
+        r,
+        g,
+        b
+    );
+
+}
+
+
+/*
+===========================================================
+COLOR CLASSIFIER
+===========================================================
+*/
+
+function classifyColor(
+    r,
+    g,
+    b
+) {
+
+    const max =
+        Math.max(
+            r,
+            g,
+            b
+        );
+
+
+    const min =
+        Math.min(
+            r,
+            g,
+            b
+        );
+
+
+    /*
+    BLACK
+    */
+
+    if (max < 55) {
+
+        return {
+            name: "BLACK",
+            hex: "#555555"
+        };
+
+    }
+
+
+    /*
+    WHITE
+    */
+
+    if (
+        min > 185 &&
+        max - min < 45
+    ) {
+
+        return {
+            name: "WHITE",
+            hex: "#ffffff"
+        };
+
+    }
+
+
+    /*
+    GRAY
+    */
+
+    if (
+        max - min < 30
+    ) {
+
+        return {
+            name: "GRAY",
+            hex: "#aaaaaa"
+        };
+
+    }
+
+
+    /*
+    RED
+    */
+
+    if (
+        r > g * 1.35 &&
+        r > b * 1.35
+    ) {
+
+        return {
+            name: "RED",
+            hex: "#ff3030"
+        };
+
+    }
+
+
+    /*
+    GREEN
+    */
+
+    if (
+        g > r * 1.25 &&
+        g > b * 1.15
+    ) {
+
+        return {
+            name: "GREEN",
+            hex: "#00ff66"
+        };
+
+    }
+
+
+    /*
+    BLUE
+    */
+
+    if (
+        b > r * 1.25 &&
+        b > g * 1.10
+    ) {
+
+        return {
+            name: "BLUE",
+            hex: "#3399ff"
+        };
+
+    }
+
+
+    /*
+    YELLOW
+    */
+
+    if (
+        r > 130 &&
+        g > 110 &&
+        b < 90
+    ) {
+
+        return {
+            name: "YELLOW",
+            hex: "#ffff00"
+        };
+
+    }
+
+
+    /*
+    ORANGE
+    */
+
+    if (
+        r > 150 &&
+        g > 65 &&
+        g < r * 0.8 &&
+        b < 90
+    ) {
+
+        return {
+            name: "ORANGE",
+            hex: "#ff8800"
+        };
+
+    }
+
+
+    /*
+    PURPLE
+    */
+
+    if (
+        r > 80 &&
+        b > 80 &&
+        g < r * 0.8 &&
+        g < b * 0.8
+    ) {
+
+        return {
+            name: "PURPLE",
+            hex: "#bb66ff"
+        };
+
+    }
+
+
+    /*
+    CYAN
+    */
+
+    if (
+        g > r * 1.15 &&
+        b > r * 1.15
+    ) {
+
+        return {
+            name: "CYAN",
+            hex: "#00ffff"
+        };
+
+    }
+
+
+    return {
+
+        name: "MIXED",
+
+        hex:
+            "rgb(" +
+            Math.round(r) +
+            "," +
+            Math.round(g) +
+            "," +
+            Math.round(b) +
+            ")"
+
+    };
+
+}
+
+
+/*
+===========================================================
+SKELETON
+===========================================================
+*/
+
+function drawSkeleton(
+    landmarks
+) {
+
+    const connections = [
+
+        [11,12],
+
+        [11,13],
+        [13,15],
+
+        [12,14],
+        [14,16],
+
+        [11,23],
+        [12,24],
+
+        [23,24],
+
+        [23,25],
+        [25,27],
+
+        [24,26],
+        [26,28]
+
+    ];
+
+
+    ctx.strokeStyle =
+        "rgba(0,255,255,.65)";
+
+    ctx.lineWidth = 2;
+
+
+    for (
+        const pair
+        of connections
+    ) {
+
+        const a =
+            landmarks[pair[0]];
+
+        const b =
+            landmarks[pair[1]];
+
+
+        if (
+            !visible(a) ||
+            !visible(b)
+        ) {
+
+            continue;
+
+        }
+
+
+        const pa =
+            point(a);
+
+        const pb =
+            point(b);
+
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            pa.x * canvas.width,
+            pa.y * canvas.height
+        );
+
+        ctx.lineTo(
+            pb.x * canvas.width,
+            pb.y * canvas.height
+        );
+
+        ctx.stroke();
+
+    }
+
+}
+
+
+/*
+===========================================================
+LANDMARK HELPERS
+===========================================================
+*/
+
+function visible(
+    landmark
+) {
+
+    return (
+        landmark &&
+        landmark.visibility !== undefined &&
+        landmark.visibility > 0.45
+    );
+
+}
+
+
+function point(
+    landmark
+) {
+
+    return {
+
+        x: landmark.x,
+
+        y: landmark.y
+
+    };
+
+}
+
+
+/*
+===========================================================
+CROSSHAIR
+===========================================================
+*/
+
+function drawCrosshair(
+    x,
+    y,
+    color
+) {
+
+    ctx.strokeStyle =
+        color;
+
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        x - 10,
+        y
+    );
+
+    ctx.lineTo(
+        x + 10,
+        y
+    );
+
+    ctx.moveTo(
+        x,
+        y - 10
+    );
+
+    ctx.lineTo(
+        x,
+        y + 10
+    );
+
+    ctx.stroke();
+
+}
+
+
+/*
+===========================================================
+LABEL
+===========================================================
+*/
+
+function drawLabel(
+    x,
+    y,
+    text
+) {
+
+    ctx.font =
+        "bold 14px Arial";
+
+
+    const width =
+        ctx.measureText(text).width +
+        12;
+
+
+    ctx.fillStyle =
+        "rgba(0,0,0,.75)";
+
+
+    ctx.fillRect(
+        x,
+        y - 20,
+        width,
+        24
+    );
+
+
+    ctx.fillStyle =
+        "white";
+
+
+    ctx.fillText(
+        text,
+        x + 6,
+        y - 3
+    );
+
+}
+
+
+/*
+===========================================================
+RESULT PANEL
+===========================================================
+*/
+
+function updateResults() {
+
+    let text = "";
+
+
+    if (
+        faceResults &&
+        faceResults.detections
+    ) {
+
+        text +=
+            "Faces: " +
+            faceResults.detections.length;
+
+    } else {
+
+        text +=
+            "Faces: 0";
+
+    }
+
+
+    text +=
+        " | Bodies: " +
+        detectedPeople;
+
+
+    if (
+        poseResults &&
+        poseResults.poseLandmarks
+    ) {
+
+        const lm =
+            poseResults.poseLandmarks;
+
+
+        if (
+            lm[11] &&
+            lm[12] &&
+            lm[23] &&
+            lm[24]
+        ) {
+
+            const topColor =
+                sampleColor(
+
+                    Math.min(
+                        lm[11].x,
+                        lm[12].x
+                    ) * canvas.width,
+
+                    Math.min(
+                        lm[11].y,
+                        lm[12].y
+                    ) * canvas.height,
+
+                    Math.abs(
+                        lm[11].x -
+                        lm[12].x
+                    ) * canvas.width,
+
+                    Math.abs(
+                        (
+                            lm[23].y +
+                            lm[24].y
+                        ) / 2 -
+                        (
+                            lm[11].y +
+                            lm[12].y
+                        ) / 2
+                    ) * canvas.height
+
                 );
 
 
-            ctx.fillStyle =
-                "rgba(0,0,0,.75)";
+            text +=
+                "<br>Top color: " +
+                topColor.name;
 
-            ctx.fillRect(
-                x,
-                y-32,
-                230,
-                32
-            );
-
-
-            ctx.fillStyle =
-                "#00ff00";
-
-            ctx.font =
-                "bold 17px Arial";
-
-            ctx.fillText(
-                "PERSON | CLOTHING: " +
-                color,
-                x+7,
-                y-10
-            );
-
-
-            /*
-            CLOTHING REGION
-
-            Approximation:
-            middle portion of person
-            */
-
-            const clothingX =
-                x + w*0.15;
-
-            const clothingY =
-                y + h*0.25;
-
-            const clothingW =
-                w*0.70;
-
-            const clothingH =
-                h*0.45;
-
-
-            ctx.strokeStyle =
-                "#00ffff";
-
-            ctx.lineWidth = 3;
-
-            ctx.strokeRect(
-                clothingX,
-                clothingY,
-                clothingW,
-                clothingH
-            );
-
-
-            ctx.fillStyle =
-                "#00ffff";
-
-            ctx.font =
-                "bold 15px Arial";
-
-            ctx.fillText(
-                color + " CLOTHING",
-                clothingX,
-                clothingY-7
-            );
         }
 
-
-        /*
-        OTHER OBJECTS
-        */
-
-        else {
-
-            ctx.strokeStyle =
-                "#ffffff";
-
-            ctx.lineWidth = 2;
-
-            ctx.strokeRect(
-                x,y,w,h
-            );
-
-
-            ctx.fillStyle =
-                "white";
-
-            ctx.font =
-                "15px Arial";
-
-            ctx.fillText(
-                p.class +
-                " " +
-                Math.round(p.score*100) +
-                "%",
-                x,
-                y-5
-            );
-        }
     }
 
 
-    status.textContent =
-        found +
-        " person(s) detected";
+    results.innerHTML =
+        text;
 
-
-    requestAnimationFrame(
-        detect
-    );
 }
 
 
-/* =========================
-   START
-========================= */
+/*
+===========================================================
+FPS
+===========================================================
+*/
 
-async function main() {
+function updateFPS() {
 
-    try {
-
-        status.textContent =
-            "Starting camera...";
-
-        await startCamera();
+    frames++;
 
 
-        status.textContent =
-            "Loading AI model...";
+    const now =
+        performance.now();
 
 
-        model =
-            await cocoSsd.load();
+    if (
+        now - fpsTime >= 1000
+    ) {
+
+        currentFPS =
+            frames;
 
 
-        status.textContent =
-            "SCANNING";
+        frames = 0;
+
+        fpsTime =
+            now;
 
 
-        detect();
+        fpsDisplay.textContent =
+            currentFPS +
+            " FPS";
 
-
-    } catch(error) {
-
-        console.error(error);
-
-        status.textContent =
-            "ERROR: " +
-            error.message;
     }
+
 }
 
 
-main();
+/*
+===========================================================
+START BUTTON
+===========================================================
+*/
+
+startButton.addEventListener(
+    "click",
+    startCamera
+);
 
 </script>
 
