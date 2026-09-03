@@ -19,74 +19,85 @@ html,body{
 }
 
 canvas{
-    display:block;
+    position:fixed;
+    inset:0;
     width:100%;
     height:100%;
+    display:block;
     touch-action:none;
 }
 
 #mobileControls{
     position:fixed;
     inset:0;
+    z-index:100;
     pointer-events:none;
 }
 
 #joystick{
     position:absolute;
-    left:28px;
-    bottom:30px;
-    width:145px;
-    height:145px;
+    left:24px;
+    bottom:28px;
+    width:140px;
+    height:140px;
     border-radius:50%;
-    border:3px solid rgba(255,255,255,.35);
-    background:rgba(255,255,255,.08);
+    box-sizing:border-box;
+    border:3px solid rgba(255,255,255,.45);
+    background:rgba(30,30,30,.28);
+    box-shadow:0 0 20px rgba(0,0,0,.25);
     pointer-events:auto;
+    touch-action:none;
 }
 
 #joystickKnob{
     position:absolute;
     left:50%;
     top:50%;
-    width:65px;
-    height:65px;
-    margin-left:-32.5px;
-    margin-top:-32.5px;
+    width:62px;
+    height:62px;
+    margin-left:-31px;
+    margin-top:-31px;
     border-radius:50%;
-    background:rgba(255,255,255,.3);
-    border:2px solid rgba(255,255,255,.55);
+    box-sizing:border-box;
+    border:2px solid rgba(255,255,255,.7);
+    background:rgba(255,255,255,.28);
+    pointer-events:none;
 }
 
 .actionButton{
     position:absolute;
+    box-sizing:border-box;
     width:82px;
     height:82px;
     border-radius:50%;
-    border:3px solid rgba(255,255,255,.35);
-    background:rgba(255,255,255,.1);
+    border:3px solid rgba(255,255,255,.45);
+    background:rgba(30,30,30,.32);
     color:white;
     font-family:Arial,sans-serif;
-    font-size:14px;
+    font-size:13px;
     font-weight:bold;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    text-align:center;
+    line-height:76px;
     pointer-events:auto;
+    touch-action:none;
 }
 
 #jump{
-    right:30px;
+    right:25px;
     bottom:145px;
 }
 
 #sprint{
-    right:130px;
-    bottom:40px;
+    right:125px;
+    bottom:38px;
 }
 
 @media(min-width:900px){
+
     #mobileControls{
         display:none;
     }
+
 }
 
 </style>
@@ -100,15 +111,11 @@ canvas{
         <div id="joystickKnob"></div>
     </div>
 
-    <div
-        id="jump"
-        class="actionButton">
+    <div id="jump" class="actionButton">
         JUMP
     </div>
 
-    <div
-        id="sprint"
-        class="actionButton">
+    <div id="sprint" class="actionButton">
         SPRINT
     </div>
 
@@ -120,16 +127,17 @@ canvas{
 <script>
 
 if(typeof THREE === "undefined"){
+
     document.body.innerHTML =
-        "<div style='color:white;font-family:Arial;padding:20px'>Three.js failed to load.</div>";
+        "<div style='color:white;padding:20px;font-family:Arial'>Three.js failed to load.</div>";
 
     throw new Error("Three.js failed to load");
 }
 
 
-// ======================================
+// ========================================
 // SCENE
-// ======================================
+// ========================================
 
 const scene =
     new THREE.Scene();
@@ -139,7 +147,7 @@ const camera =
         75,
         innerWidth/innerHeight,
         0.05,
-        5000
+        4000
     );
 
 const renderer =
@@ -154,7 +162,7 @@ renderer.setSize(
 );
 
 renderer.setPixelRatio(
-    Math.min(devicePixelRatio,1.5)
+    Math.min(devicePixelRatio,1.4)
 );
 
 renderer.outputColorSpace =
@@ -171,9 +179,9 @@ document.body.appendChild(
 );
 
 
-// ======================================
-// TERRAIN SETTINGS
-// ======================================
+// ========================================
+// WORLD SETTINGS
+// ========================================
 
 const CHUNK_SIZE = 100;
 
@@ -182,20 +190,20 @@ const TERRAIN_SEGMENTS = 32;
 const VIEW_DISTANCE = 2;
 
 
-// ======================================
-// DETERMINISTIC RANDOMNESS
-// ======================================
+// ========================================
+// RANDOM FUNCTIONS
+// ========================================
 
 function hash(x,z){
 
-    const value =
+    const n =
         Math.sin(
             x*127.1 +
             z*311.7
         )*43758.5453123;
 
-    return value -
-        Math.floor(value);
+    return n -
+        Math.floor(n);
 }
 
 
@@ -227,37 +235,33 @@ function noise(x,z){
         smooth(z-z0);
 
 
-    const n00 =
+    const a =
         hash(x0,z0);
 
-    const n10 =
+    const b =
         hash(x1,z0);
 
-    const n01 =
+    const c =
         hash(x0,z1);
 
-    const n11 =
+    const d =
         hash(x1,z1);
 
 
-    const ix0 =
+    const ab =
         THREE.MathUtils.lerp(
-            n00,
-            n10,
-            sx
+            a,b,sx
         );
 
-    const ix1 =
+    const cd =
         THREE.MathUtils.lerp(
-            n01,
-            n11,
-            sx
+            c,d,sx
         );
 
 
     return THREE.MathUtils.lerp(
-        ix0,
-        ix1,
+        ab,
+        cd,
         sz
     );
 }
@@ -267,14 +271,14 @@ function fbm(x,z){
 
     let value = 0;
 
-    let amplitude = 0.5;
+    let amplitude = .5;
 
     let frequency = 1;
 
 
     for(
         let i=0;
-        i<6;
+        i<5;
         i++
     ){
 
@@ -282,13 +286,11 @@ function fbm(x,z){
             noise(
                 x*frequency,
                 z*frequency
-            ) *
-            amplitude;
-
+            )*amplitude;
 
         frequency *= 2;
 
-        amplitude *= 0.5;
+        amplitude *= .5;
     }
 
 
@@ -296,9 +298,9 @@ function fbm(x,z){
 }
 
 
-// ======================================
-// TERRAIN HEIGHT
-// ======================================
+// ========================================
+// TERRAIN
+// ========================================
 
 const terrainCache =
     new Map();
@@ -306,66 +308,59 @@ const terrainCache =
 
 function rawHeight(x,z){
 
-    const continental =
+    const large =
         fbm(
-            x*0.0018,
-            z*0.0018
+            x*.003,
+            z*.003
         );
 
-    const hills =
+    const medium =
         fbm(
-            x*0.006,
-            z*0.006
+            x*.012,
+            z*.012
         );
 
-    const mountains =
+    const small =
         fbm(
-            x*0.018,
-            z*0.018
+            x*.04,
+            z*.04
         );
 
 
-    let height =
-
-        continental * 14 +
-
-        hills * 12 +
-
-        mountains * 5;
-
-
-    height -= 10;
-
-
-    return height;
+    return (
+        large*13 +
+        medium*7 +
+        small*2
+    ) - 10;
 }
 
 
 function terrainHeight(x,z){
 
-    const cx =
+    const gx =
         Math.round(x*2)/2;
 
-    const cz =
+    const gz =
         Math.round(z*2)/2;
 
 
     const key =
-        cx+","+cz;
+        gx+","+gz;
 
 
-    if(
-        terrainCache.has(key)
-    ){
+    const old =
+        terrainCache.get(key);
 
-        return terrainCache.get(key);
+
+    if(old !== undefined){
+        return old;
     }
 
 
     const h =
         rawHeight(
-            cx,
-            cz
+            gx,
+            gz
         );
 
 
@@ -375,33 +370,13 @@ function terrainHeight(x,z){
     );
 
 
-    if(
-        terrainCache.size >
-        50000
-    ){
-
-        const first =
-            terrainCache.keys()
-            .next()
-            .value;
-
-        terrainCache.delete(
-            first
-        );
-    }
-
-
     return h;
 }
 
 
-// ======================================
-// TERRAIN SLOPE
-// ======================================
+function terrainNormal(x,z){
 
-function terrainSlope(x,z){
-
-    const e = 0.5;
+    const e = .35;
 
 
     const left =
@@ -429,77 +404,47 @@ function terrainSlope(x,z){
         );
 
 
-    const dx =
-        (right-left) /
-        (2*e);
+    return new THREE.Vector3(
+        left-right,
+        2*e,
+        down-up
+    ).normalize();
+}
 
-    const dz =
-        (up-down) /
-        (2*e);
 
+function terrainSlope(x,z){
+
+    const n =
+        terrainNormal(
+            x,
+            z
+        );
 
     return Math.sqrt(
-        dx*dx +
-        dz*dz
+        n.x*n.x +
+        n.z*n.z
     );
 }
 
 
-// ======================================
-// TERRAIN NORMAL
-// ======================================
+// ========================================
+// SMALLER BIOMES
+// ========================================
 
-function terrainNormal(x,z){
+function biomeNoise(x,z){
 
-    const e = 0.5;
-
-
-    const left =
-        terrainHeight(
-            x-e,
-            z
-        );
-
-    const right =
-        terrainHeight(
-            x+e,
-            z
-        );
-
-    const down =
-        terrainHeight(
-            x,
-            z-e
-        );
-
-    const up =
-        terrainHeight(
-            x,
-            z+e
-        );
-
-
-    const normal =
-        new THREE.Vector3(
-            left-right,
-            2*e,
-            down-up
-        );
-
-
-    return normal.normalize();
+    return fbm(
+        x*.012+500,
+        z*.012-800
+    );
 }
 
-
-// ======================================
-// BIOME NOISE
-// ======================================
 
 function moisture(x,z){
 
     return fbm(
-        x*0.004+1000,
-        z*0.004-2000
+        x*.018+1200,
+        z*.018+700
     );
 }
 
@@ -507,8 +452,8 @@ function moisture(x,z){
 function temperature(x,z){
 
     return fbm(
-        x*0.003-5000,
-        z*0.003+4000
+        x*.015-500,
+        z*.015+900
     );
 }
 
@@ -521,13 +466,17 @@ function getBiome(x,z){
             z
         );
 
+    const b =
+        biomeNoise(
+            x,
+            z
+        );
 
     const m =
         moisture(
             x,
             z
         );
-
 
     const t =
         temperature(
@@ -536,65 +485,72 @@ function getBiome(x,z){
         );
 
 
-    if(h < -1){
+    if(h < -1.5){
         return "water";
     }
 
 
-    if(h < 3){
-
-        if(t < 0.25){
-            return "sand";
-        }
-
-        return "plains";
+    if(
+        h < 1.5 &&
+        t > .45
+    ){
+        return "beach";
     }
 
 
-    if(h < 8){
+    if(
+        h < 7
+    ){
 
         if(
-            t > 0.65 &&
-            m < 0.45
+            b > .62 &&
+            m > .55
         ){
+            return "forest";
+        }
 
+        if(
+            b < .28 &&
+            t > .58
+        ){
             return "desert";
         }
 
-
-        if(m > 0.58){
-            return "forest";
-        }
-
-
         return "plains";
     }
 
 
-    if(h < 16){
+    if(
+        h < 13
+    ){
 
         if(
-            m > 0.62
+            m > .56 &&
+            b > .4
         ){
-
             return "forest";
         }
 
-
         if(
-            t > 0.7 &&
-            m < 0.4
+            t > .67 &&
+            m < .43
         ){
-
             return "dryland";
         }
-
 
         return "grassland";
     }
 
 
-    if(h < 25){
+    if(
+        h < 20
+    ){
+
+        if(
+            m > .55
+        ){
+            return "forest";
+        }
 
         return "rock";
     }
@@ -604,76 +560,77 @@ function getBiome(x,z){
 }
 
 
-// ======================================
+// ========================================
 // MATERIALS
-// ======================================
+// ========================================
 
 const materials = {
 
     water:
         new THREE.MeshStandardMaterial({
-            color:0x246f91,
-            roughness:0.2,
-            metalness:0.05
+            color:0x287c9b,
+            roughness:.2,
+            metalness:.05
         }),
 
-    sand:
+    beach:
         new THREE.MeshStandardMaterial({
-            color:0xc8ad70,
+            color:0xcdb878,
             roughness:1
         }),
 
     plains:
         new THREE.MeshStandardMaterial({
-            color:0x76994d,
-            roughness:1
-        }),
-
-    forest:
-        new THREE.MeshStandardMaterial({
-            color:0x3d6d38,
+            color:0x71954b,
             roughness:1
         }),
 
     grassland:
         new THREE.MeshStandardMaterial({
-            color:0x659347,
+            color:0x5d8c43,
+            roughness:1
+        }),
+
+    forest:
+        new THREE.MeshStandardMaterial({
+            color:0x3e6f38,
             roughness:1
         }),
 
     dryland:
         new THREE.MeshStandardMaterial({
-            color:0x8c8650,
+            color:0x85804f,
             roughness:1
         }),
 
     desert:
         new THREE.MeshStandardMaterial({
-            color:0xc5a35d,
+            color:0xc7a35c,
             roughness:1
         }),
 
     rock:
         new THREE.MeshStandardMaterial({
-            color:0x737373,
+            color:0x777777,
             roughness:1
         }),
 
     mountain:
         new THREE.MeshStandardMaterial({
-            color:0x555555,
+            color:0x565656,
             roughness:1
         })
+
 };
 
 
-// ======================================
+// ========================================
 // SKY
-// ======================================
+// ========================================
 
 const skyMaterial =
     new THREE.MeshBasicMaterial({
-        color:0x76a9d6,
+        color:0x78a9d4,
         side:THREE.BackSide
     });
 
@@ -681,7 +638,7 @@ const skyMaterial =
 const sky =
     new THREE.Mesh(
         new THREE.SphereGeometry(
-            2500,
+            2200,
             32,
             16
         ),
@@ -694,9 +651,9 @@ scene.add(
 );
 
 
-// ======================================
-// LIGHTING
-// ======================================
+// ========================================
+// LIGHT
+// ========================================
 
 const sun =
     new THREE.DirectionalLight(
@@ -704,16 +661,14 @@ const sun =
         2
     );
 
-
-sun.castShadow = true;
-
+sun.castShadow =
+    true;
 
 sun.shadow.mapSize.width =
     1024;
 
 sun.shadow.mapSize.height =
     1024;
-
 
 sun.shadow.camera.left =
     -250;
@@ -727,12 +682,8 @@ sun.shadow.camera.top =
 sun.shadow.camera.bottom =
     -250;
 
-sun.shadow.camera.near =
-    1;
-
 sun.shadow.camera.far =
-    1000;
-
+    900;
 
 scene.add(
     sun
@@ -741,25 +692,20 @@ scene.add(
 
 const ambient =
     new THREE.HemisphereLight(
-        0x9fc9ff,
-        0x354329,
+        0x9cc9ff,
+        0x39452d,
         1
     );
-
 
 scene.add(
     ambient
 );
 
 
-// ======================================
-// SUN DISK
-// ======================================
-
 const sunVisual =
     new THREE.Mesh(
         new THREE.SphereGeometry(
-            18,
+            17,
             16,
             16
         ),
@@ -768,48 +714,43 @@ const sunVisual =
         })
     );
 
-
 scene.add(
     sunVisual
 );
 
 
-// ======================================
-// FOG
-// ======================================
-
 scene.fog =
     new THREE.Fog(
-        0x76a9d6,
-        250,
-        1600
+        0x78a9d4,
+        220,
+        1500
     );
 
 
-// ======================================
-// VEGETATION GEOMETRY
-// ======================================
+// ========================================
+// VEGETATION
+// ========================================
 
 const trunkGeometry =
     new THREE.CylinderGeometry(
-        0.35,
-        0.55,
-        4,
+        .3,
+        .48,
+        3.5,
         7
     );
 
 
 const leavesGeometry =
     new THREE.ConeGeometry(
-        2.8,
-        7,
+        2.4,
+        5.5,
         8
     );
 
 
 const bushGeometry =
     new THREE.SphereGeometry(
-        1.2,
+        1,
         7,
         5
     );
@@ -824,14 +765,14 @@ const rockGeometry =
 
 const grassGeometry =
     new THREE.PlaneGeometry(
-        0.7,
-        1.2
+        .55,
+        .9
     );
 
 
 const flowerGeometry =
     new THREE.SphereGeometry(
-        0.13,
+        .12,
         6,
         4
     );
@@ -839,35 +780,35 @@ const flowerGeometry =
 
 const trunkMaterial =
     new THREE.MeshStandardMaterial({
-        color:0x5b3928,
+        color:0x60402c,
         roughness:1
     });
 
 
 const leavesMaterial =
     new THREE.MeshStandardMaterial({
-        color:0x2e5b2e,
+        color:0x285c2d,
         roughness:1
     });
 
 
 const bushMaterial =
     new THREE.MeshStandardMaterial({
-        color:0x315f30,
+        color:0x397238,
         roughness:1
     });
 
 
 const rockMaterial =
     new THREE.MeshStandardMaterial({
-        color:0x777777,
+        color:0x747474,
         roughness:1
     });
 
 
 const grassMaterial =
     new THREE.MeshStandardMaterial({
-        color:0x4f8b38,
+        color:0x4c8738,
         side:THREE.DoubleSide,
         roughness:1
     });
@@ -876,33 +817,25 @@ const grassMaterial =
 const flowerMaterials = [
 
     new THREE.MeshStandardMaterial({
-        color:0xe8d8d0,
-        roughness:0.8
+        color:0xf1c5d5
     }),
 
     new THREE.MeshStandardMaterial({
-        color:0xd9a4b8,
-        roughness:0.8
+        color:0xe9d35e
     }),
 
     new THREE.MeshStandardMaterial({
-        color:0xe1c75b,
-        roughness:0.8
+        color:0xc6a7e0
     }),
 
     new THREE.MeshStandardMaterial({
-        color:0xbca3d8,
-        roughness:0.8
+        color:0xffffff
     })
 
 ];
 
 
-// ======================================
-// ALIGN OBJECT TO TERRAIN
-// ======================================
-
-const upVector =
+const UP =
     new THREE.Vector3(
         0,
         1,
@@ -910,7 +843,11 @@ const upVector =
     );
 
 
-function alignToTerrain(
+// ========================================
+// TERRAIN ALIGNMENT
+// ========================================
+
+function alignObject(
     object,
     x,
     z
@@ -923,16 +860,17 @@ function alignToTerrain(
         );
 
 
-    object.quaternion.setFromUnitVectors(
-        upVector,
-        normal
-    );
+    object.quaternion
+        .setFromUnitVectors(
+            UP,
+            normal
+        );
 }
 
 
-// ======================================
-// OBJECT CREATION
-// ======================================
+// ========================================
+// OBJECTS
+// ========================================
 
 function createTree(
     x,
@@ -947,19 +885,7 @@ function createTree(
         );
 
 
-    const slope =
-        terrainSlope(
-            x,
-            z
-        );
-
-
-    if(slope > 2.2){
-        return;
-    }
-
-
-    const tree =
+    const group =
         new THREE.Group();
 
 
@@ -976,7 +902,7 @@ function createTree(
 
 
     trunk.position.y =
-        2 * scale;
+        1.75*scale;
 
 
     trunk.castShadow =
@@ -996,38 +922,38 @@ function createTree(
 
 
     leaves.position.y =
-        6 * scale;
+        5*scale;
 
 
     leaves.castShadow =
         true;
 
 
-    tree.add(
+    group.add(
         trunk
     );
 
-    tree.add(
+    group.add(
         leaves
     );
 
 
-    tree.position.set(
+    group.position.set(
         x,
         ground,
         z
     );
 
 
-    alignToTerrain(
-        tree,
+    alignObject(
+        group,
         x,
         z
     );
 
 
     scene.add(
-        tree
+        group
     );
 }
 
@@ -1054,16 +980,15 @@ function createBush(
 
     bush.position.set(
         x,
-        ground +
-        0.8*scale,
+        ground+.65*scale,
         z
     );
 
 
     bush.scale.set(
-        scale*1.2,
-        scale*0.7,
-        scale*1.2
+        1.2*scale,
+        .65*scale,
+        1.2*scale
     );
 
 
@@ -1071,7 +996,7 @@ function createBush(
         true;
 
 
-    alignToTerrain(
+    alignObject(
         bush,
         x,
         z
@@ -1106,35 +1031,28 @@ function createRock(
 
     rock.position.set(
         x,
-        ground +
-        scale*0.45,
+        ground+.45*scale,
         z
     );
 
 
     rock.scale.set(
-        scale*1.2,
-        scale*0.8,
+        scale*1.15,
+        scale*.7,
         scale
     );
 
 
     rock.rotation.y =
-        hash(
-            x,
-            z
-        )*Math.PI*2;
+        hash(x,z)*
+        Math.PI*2;
 
 
     rock.castShadow =
         true;
 
 
-    rock.receiveShadow =
-        true;
-
-
-    alignToTerrain(
+    alignObject(
         rock,
         x,
         z
@@ -1169,8 +1087,7 @@ function createGrass(
 
     grass.position.set(
         x,
-        ground +
-        0.55*scale,
+        ground+.45*scale,
         z
     );
 
@@ -1183,12 +1100,12 @@ function createGrass(
     grass.rotation.y =
         hash(
             x*4,
-            z*3
-        ) *
-        Math.PI;
+            z*5
+        )*
+        Math.PI*2;
 
 
-    alignToTerrain(
+    alignObject(
         grass,
         x,
         z
@@ -1219,7 +1136,10 @@ function createFlower(
             flowerGeometry,
             flowerMaterials[
                 Math.floor(
-                    hash(x,z) *
+                    hash(
+                        x,
+                        z
+                    )*
                     flowerMaterials.length
                 )
             ]
@@ -1228,8 +1148,7 @@ function createFlower(
 
     flower.position.set(
         x,
-        ground +
-        0.9*scale,
+        ground+.7*scale,
         z
     );
 
@@ -1239,11 +1158,7 @@ function createFlower(
     );
 
 
-    flower.castShadow =
-        false;
-
-
-    alignToTerrain(
+    alignObject(
         flower,
         x,
         z
@@ -1256,50 +1171,52 @@ function createFlower(
 }
 
 
-// ======================================
+// ========================================
 // CHUNK VEGETATION
-// ======================================
+// ========================================
 
 function createChunkObjects(
     cx,
     cz
 ){
 
-    const baseX =
+    const startX =
         cx*CHUNK_SIZE -
         CHUNK_SIZE/2;
 
-    const baseZ =
+    const startZ =
         cz*CHUNK_SIZE -
         CHUNK_SIZE/2;
 
 
+    // Dense small vegetation
+
     for(
         let i=0;
-        i<70;
+        i<110;
         i++
     ){
 
         const x =
-            baseX +
+            startX +
             hash(
                 cx*1000+i,
                 cz*2000+i
-            ) *
+            )*
             CHUNK_SIZE;
 
 
         const z =
-            baseZ +
+            startZ +
             hash(
                 cx*3000+i,
                 cz*4000+i
-            ) *
+            )*
             CHUNK_SIZE;
 
 
-        const h =
-            terrainHeight(
+        const biome =
+            getBiome(
                 x,
                 z
             );
@@ -1312,18 +1229,11 @@ function createChunkObjects(
             );
 
 
-        const biome =
-            getBiome(
-                x,
-                z
-            );
-
-
         if(
             biome === "water" ||
-            slope > 2.5
+            biome === "beach" ||
+            slope > .7
         ){
-
             continue;
         }
 
@@ -1335,95 +1245,84 @@ function createChunkObjects(
             );
 
 
-        // Forest trees
-
         if(
             biome === "forest"
         ){
 
-            if(r < 0.55){
+            if(r < .22){
 
                 createTree(
                     x,
                     z,
-                    0.65 +
-                    r
+                    .45 +
+                    hash(z,i)*.45
                 );
 
             }else if(
-                r < 0.75
+                r < .42
             ){
 
                 createBush(
                     x,
                     z,
-                    0.7 +
-                    r
+                    .35 +
+                    r*.5
                 );
 
-            }else{
+            }else if(
+                r < .86
+            ){
 
                 createGrass(
                     x,
                     z,
-                    0.7 +
-                    r
+                    .45 +
+                    r*.35
                 );
-            }
 
-
-            if(
-                r > 0.45
-            ){
+            }else{
 
                 createFlower(
-                    x+0.7,
-                    z+0.5,
-                    0.7
+                    x,
+                    z,
+                    .5
                 );
             }
 
-
-            continue;
-        }
-
-
-        // Plains
-
-        if(
+        }else if(
             biome === "plains" ||
             biome === "grassland"
         ){
 
-            if(r < 0.12){
+            if(r < .07){
 
                 createTree(
                     x,
                     z,
-                    0.65 +
-                    r
+                    .4 +
+                    r*2
                 );
 
             }else if(
-                r < 0.22
+                r < .14
             ){
 
                 createBush(
                     x,
                     z,
-                    0.5 +
+                    .35 +
                     r
                 );
 
             }else if(
-                r < 0.82
+                r < .75
             ){
 
                 createGrass(
                     x,
                     z,
-                    0.55 +
-                    r
+                    .4 +
+                    r*.35
                 );
 
             }else{
@@ -1431,28 +1330,21 @@ function createChunkObjects(
                 createFlower(
                     x,
                     z,
-                    0.6 +
-                    r
+                    .45 +
+                    r*.3
                 );
             }
 
-
-            continue;
-        }
-
-
-        // Drylands
-
-        if(
+        }else if(
             biome === "dryland"
         ){
 
-            if(r < 0.12){
+            if(r < .18){
 
                 createBush(
                     x,
                     z,
-                    0.45
+                    .35
                 );
 
             }else{
@@ -1460,50 +1352,36 @@ function createChunkObjects(
                 createGrass(
                     x,
                     z,
-                    0.45
+                    .35
                 );
             }
 
-
-            continue;
-        }
-
-
-        // Desert
-
-        if(
+        }else if(
             biome === "desert"
         ){
 
-            if(r < 0.08){
+            if(r < .12){
 
                 createRock(
                     x,
                     z,
-                    0.7 +
-                    r
+                    .35 +
+                    r*.7
                 );
             }
 
-
-            continue;
-        }
-
-
-        // Mountains
-
-        if(
+        }else if(
             biome === "rock" ||
             biome === "mountain"
         ){
 
-            if(r < 0.5){
+            if(r < .45){
 
                 createRock(
                     x,
                     z,
-                    0.6 +
-                    r*1.5
+                    .35 +
+                    r*.9
                 );
             }
         }
@@ -1511,11 +1389,11 @@ function createChunkObjects(
 }
 
 
-// ======================================
-// CHUNK GENERATION
-// ======================================
+// ========================================
+// CHUNKS
+// ========================================
 
-const chunkMap =
+const chunks =
     new Map();
 
 
@@ -1538,7 +1416,7 @@ function createChunk(
 
 
     if(
-        chunkMap.has(key)
+        chunks.has(key)
     ){
         return;
     }
@@ -1569,27 +1447,27 @@ function createChunk(
         i++
     ){
 
-        const lx =
+        const localX =
             positions.getX(i);
 
-        const lz =
+        const localZ =
             positions.getZ(i);
 
 
-        const wx =
+        const worldX =
             cx*CHUNK_SIZE +
-            lx;
+            localX;
 
-        const wz =
+        const worldZ =
             cz*CHUNK_SIZE +
-            lz;
+            localZ;
 
 
         positions.setY(
             i,
             terrainHeight(
-                wx,
-                wz
+                worldX,
+                worldZ
             )
         );
     }
@@ -1616,39 +1494,35 @@ function createChunk(
         );
 
 
-    const mesh =
+    const terrain =
         new THREE.Mesh(
             geometry,
             materials[
                 biome
             ] ||
-            materials.plains
+            materials.grassland
         );
 
 
-    mesh.position.set(
+    terrain.position.set(
         centerX,
         0,
         centerZ
     );
 
 
-    mesh.receiveShadow =
+    terrain.receiveShadow =
         true;
 
 
     scene.add(
-        mesh
+        terrain
     );
 
 
-    chunkMap.set(
+    chunks.set(
         key,
-        {
-            mesh,
-            cx,
-            cz
-        }
+        terrain
     );
 
 
@@ -1659,9 +1533,9 @@ function createChunk(
 }
 
 
-// ======================================
+// ========================================
 // PLAYER
-// ======================================
+// ========================================
 
 const player = {
 
@@ -1683,21 +1557,21 @@ const player = {
 
     grounded:false,
 
-    walkingSpeed:10,
+    speed:9,
 
-    sprintSpeed:18,
+    sprintSpeed:16,
 
     gravity:-35,
 
-    jumpPower:13,
+    jumpPower:12,
 
     sprinting:false
 };
 
 
-// ======================================
+// ========================================
 // KEYBOARD
-// ======================================
+// ========================================
 
 const keys = {};
 
@@ -1711,15 +1585,10 @@ addEventListener(
 
 
         if(
-            e.code === "Space" &&
-            player.grounded
+            e.code === "Space"
         ){
 
-            player.velocity.y =
-                player.jumpPower;
-
-            player.grounded =
-                false;
+            jump();
         }
 
 
@@ -1755,14 +1624,15 @@ addEventListener(
 );
 
 
-// ======================================
-// MOBILE INPUT
-// ======================================
+// ========================================
+// MOBILE JOYSTICK
+// ========================================
 
-const joystickElement =
+const joystick =
     document.getElementById(
         "joystick"
     );
+
 
 const joystickKnob =
     document.getElementById(
@@ -1783,14 +1653,13 @@ let joystickY =
     0;
 
 
-function updateJoystick(
-    clientX,
-    clientY
+function moveJoystick(
+    x,
+    y
 ){
 
     const rect =
-        joystickElement
-        .getBoundingClientRect();
+        joystick.getBoundingClientRect();
 
 
     const centerX =
@@ -1803,19 +1672,17 @@ function updateJoystick(
 
 
     let dx =
-        clientX -
-        centerX;
+        x-centerX;
 
     let dy =
-        clientY -
-        centerY;
+        y-centerY;
 
 
     const radius =
         48;
 
 
-    const distance =
+    const length =
         Math.sqrt(
             dx*dx +
             dy*dy
@@ -1823,17 +1690,15 @@ function updateJoystick(
 
 
     if(
-        distance > radius
+        length > radius
     ){
 
         dx =
-            dx /
-            distance *
+            dx/length*
             radius;
 
         dy =
-            dy /
-            distance *
+            dy/length*
             radius;
     }
 
@@ -1854,9 +1719,11 @@ function updateJoystick(
 }
 
 
-joystickElement.addEventListener(
+joystick.addEventListener(
     "pointerdown",
     e => {
+
+        e.preventDefault();
 
         joystickActive =
             true;
@@ -1864,12 +1731,13 @@ joystickElement.addEventListener(
         joystickPointer =
             e.pointerId;
 
-        joystickElement
-            .setPointerCapture(
-                e.pointerId
-            );
 
-        updateJoystick(
+        joystick.setPointerCapture(
+            e.pointerId
+        );
+
+
+        moveJoystick(
             e.clientX,
             e.clientY
         );
@@ -1877,7 +1745,7 @@ joystickElement.addEventListener(
 );
 
 
-joystickElement.addEventListener(
+joystick.addEventListener(
     "pointermove",
     e => {
 
@@ -1890,7 +1758,10 @@ joystickElement.addEventListener(
         }
 
 
-        updateJoystick(
+        e.preventDefault();
+
+
+        moveJoystick(
             e.clientX,
             e.clientY
         );
@@ -1898,7 +1769,7 @@ joystickElement.addEventListener(
 );
 
 
-function resetJoystick(){
+function releaseJoystick(){
 
     joystickActive =
         false;
@@ -1918,20 +1789,35 @@ function resetJoystick(){
 }
 
 
-joystickElement.addEventListener(
+joystick.addEventListener(
     "pointerup",
-    resetJoystick
+    releaseJoystick
 );
 
-joystickElement.addEventListener(
+joystick.addEventListener(
     "pointercancel",
-    resetJoystick
+    releaseJoystick
 );
 
 
-// ======================================
-// JUMP BUTTON
-// ======================================
+// ========================================
+// JUMP
+// ========================================
+
+function jump(){
+
+    if(
+        player.grounded
+    ){
+
+        player.velocity.y =
+            player.jumpPower;
+
+        player.grounded =
+            false;
+    }
+}
+
 
 const jumpButton =
     document.getElementById(
@@ -1945,24 +1831,14 @@ jumpButton.addEventListener(
 
         e.preventDefault();
 
-
-        if(
-            player.grounded
-        ){
-
-            player.velocity.y =
-                player.jumpPower;
-
-            player.grounded =
-                false;
-        }
+        jump();
     }
 );
 
 
-// ======================================
-// SPRINT BUTTON
-// ======================================
+// ========================================
+// SPRINT
+// ========================================
 
 const sprintButton =
     document.getElementById(
@@ -2002,11 +1878,11 @@ sprintButton.addEventListener(
 );
 
 
-// ======================================
-// CAMERA TOUCH LOOK
-// ======================================
+// ========================================
+// TOUCH CAMERA
+// ========================================
 
-const touchLook = {
+const look = {
 
     active:false,
 
@@ -2023,31 +1899,32 @@ renderer.domElement.addEventListener(
     e => {
 
         if(
-            e.pointerType !==
-            "touch"
+            e.pointerType !== "touch"
         ){
             return;
         }
 
+
+        // Left side belongs to joystick.
 
         if(
             e.clientX <
-            innerWidth*0.42
+            innerWidth*.45
         ){
             return;
         }
 
 
-        touchLook.active =
+        look.active =
             true;
 
-        touchLook.pointer =
+        look.pointer =
             e.pointerId;
 
-        touchLook.x =
+        look.x =
             e.clientX;
 
-        touchLook.y =
+        look.y =
             e.clientY;
     }
 );
@@ -2058,29 +1935,27 @@ renderer.domElement.addEventListener(
     e => {
 
         if(
-            !touchLook.active ||
+            !look.active ||
             e.pointerId !==
-            touchLook.pointer
+            look.pointer
         ){
             return;
         }
 
 
         const dx =
-            e.clientX -
-            touchLook.x;
+            e.clientX-look.x;
 
         const dy =
-            e.clientY -
-            touchLook.y;
+            e.clientY-look.y;
 
 
         player.yaw -=
-            dx*0.003;
+            dx*.003;
 
 
         player.pitch -=
-            dy*0.003;
+            dy*.003;
 
 
         player.pitch =
@@ -2091,10 +1966,10 @@ renderer.domElement.addEventListener(
             );
 
 
-        touchLook.x =
+        look.x =
             e.clientX;
 
-        touchLook.y =
+        look.y =
             e.clientY;
     }
 );
@@ -2106,83 +1981,19 @@ renderer.domElement.addEventListener(
 
         if(
             e.pointerId ===
-            touchLook.pointer
+            look.pointer
         ){
 
-            touchLook.active =
+            look.active =
                 false;
         }
     }
 );
 
 
-// ======================================
-// DESKTOP MOUSE LOOK
-// ======================================
-
-let mouseLocked =
-    false;
-
-
-renderer.domElement.addEventListener(
-    "click",
-    () => {
-
-        if(
-            innerWidth >
-            900
-        ){
-
-            renderer.domElement
-                .requestPointerLock();
-        }
-    }
-);
-
-
-document.addEventListener(
-    "pointerlockchange",
-    () => {
-
-        mouseLocked =
-            document.pointerLockElement ===
-            renderer.domElement;
-    }
-);
-
-
-document.addEventListener(
-    "mousemove",
-    e => {
-
-        if(
-            !mouseLocked
-        ){
-            return;
-        }
-
-
-        player.yaw -=
-            e.movementX*0.002;
-
-
-        player.pitch -=
-            e.movementY*0.002;
-
-
-        player.pitch =
-            THREE.MathUtils.clamp(
-                player.pitch,
-                -1.45,
-                1.45
-            );
-    }
-);
-
-
-// ======================================
+// ========================================
 // MOVEMENT
-// ======================================
+// ========================================
 
 const move =
     new THREE.Vector3();
@@ -2198,45 +2009,41 @@ const right =
 
 function updateMovement(dt){
 
-    let forwardInput =
+    let f =
         0;
 
-    let rightInput =
+    let r =
         0;
 
 
     if(keys["KeyW"]){
-        forwardInput += 1;
+        f += 1;
     }
 
     if(keys["KeyS"]){
-        forwardInput -= 1;
+        f -= 1;
     }
 
     if(keys["KeyD"]){
-        rightInput += 1;
+        r += 1;
     }
 
     if(keys["KeyA"]){
-        rightInput -= 1;
+        r -= 1;
     }
 
 
     if(joystickActive){
 
-        forwardInput =
+        // Pushing the joystick upward
+        // produces positive forward input.
+
+        f =
             -joystickY;
 
-        rightInput =
+        r =
             joystickX;
     }
-
-
-    move.set(
-        0,
-        0,
-        0
-    );
 
 
     forward.set(
@@ -2261,20 +2068,27 @@ function updateMovement(dt){
     );
 
 
+    move.set(
+        0,
+        0,
+        0
+    );
+
+
     move.addScaledVector(
         forward,
-        forwardInput
+        f
     );
 
 
     move.addScaledVector(
         right,
-        rightInput
+        r
     );
 
 
     if(
-        move.lengthSq() > 1
+        move.lengthSq()>1
     ){
 
         move.normalize();
@@ -2286,15 +2100,15 @@ function updateMovement(dt){
         ?
         player.sprintSpeed
         :
-        player.walkingSpeed;
+        player.speed;
 
 
     const acceleration =
         player.grounded
         ?
-        70
+        65
         :
-        25;
+        20;
 
 
     player.velocity.x =
@@ -2316,9 +2130,9 @@ function updateMovement(dt){
 }
 
 
-// ======================================
+// ========================================
 // PHYSICS
-// ======================================
+// ========================================
 
 function updatePhysics(dt){
 
@@ -2332,10 +2146,8 @@ function updatePhysics(dt){
     player.position.x +=
         player.velocity.x*dt;
 
-
     player.position.z +=
         player.velocity.z*dt;
-
 
     player.position.y +=
         player.velocity.y*dt;
@@ -2348,28 +2160,21 @@ function updatePhysics(dt){
         );
 
 
-    const desiredY =
+    const target =
         ground +
         player.height;
 
 
     if(
         player.position.y <=
-        desiredY
+        target
     ){
 
         player.position.y =
-            desiredY;
+            target;
 
-
-        if(
-            player.velocity.y < 0
-        ){
-
-            player.velocity.y =
-                0;
-        }
-
+        player.velocity.y =
+            0;
 
         player.grounded =
             true;
@@ -2382,9 +2187,9 @@ function updatePhysics(dt){
 }
 
 
-// ======================================
+// ========================================
 // CAMERA
-// ======================================
+// ========================================
 
 function updateCamera(){
 
@@ -2400,15 +2205,14 @@ function updateCamera(){
     camera.rotation.y =
         player.yaw;
 
-
     camera.rotation.x =
         player.pitch;
 }
 
 
-// ======================================
-// DAY/NIGHT
-// ======================================
+// ========================================
+// DAY NIGHT
+// ========================================
 
 let worldTime =
     8;
@@ -2434,32 +2238,18 @@ function updateDayNight(dt){
 
 
     const angle =
-        worldTime/24 *
+        worldTime/24*
         Math.PI*2;
 
 
     const radius =
-        800;
-
-
-    const sunX =
-        Math.cos(angle)*
-        radius;
-
-
-    const sunY =
-        Math.sin(angle)*
-        radius;
-
-
-    const sunZ =
-        300;
+        750;
 
 
     sun.position.set(
-        sunX,
-        sunY,
-        sunZ
+        Math.cos(angle)*radius,
+        Math.sin(angle)*radius,
+        250
     );
 
 
@@ -2476,33 +2266,33 @@ function updateDayNight(dt){
 
 
     sun.intensity =
-        0.08 +
-        daylight*2.2;
+        .1 +
+        daylight*2.1;
 
 
     ambient.intensity =
-        0.18 +
-        daylight*0.85;
+        .2 +
+        daylight*.85;
 
 
-    const dayColor =
+    const day =
         new THREE.Color(
-            0x76a9d6
+            0x78a9d4
         );
 
 
-    const nightColor =
+    const night =
         new THREE.Color(
             0x071329
         );
 
 
     const skyColor =
-        nightColor.clone().lerp(
-            dayColor,
+        night.clone().lerp(
+            day,
             Math.pow(
                 daylight,
-                0.45
+                .45
             )
         );
 
@@ -2520,33 +2310,25 @@ function updateDayNight(dt){
     ambient.color.copy(
         skyColor
     );
-
-
-    sun.color.setHSL(
-        0.11,
-        0.8,
-        0.65 +
-        daylight*0.35
-    );
 }
 
 
-// ======================================
+// ========================================
 // WORLD STREAMING
-// ======================================
+// ========================================
 
 function updateWorld(){
 
     const cx =
         Math.floor(
-            player.position.x /
+            player.position.x/
             CHUNK_SIZE
         );
 
 
     const cz =
         Math.floor(
-            player.position.z /
+            player.position.z/
             CHUNK_SIZE
         );
 
@@ -2559,8 +2341,8 @@ function updateWorld(){
 
         for(
             let z=-VIEW_DISTANCE;
-            z<=VIEW_DISTANCE;
-            z++
+        z<=VIEW_DISTANCE;
+        z++
         ){
 
             createChunk(
@@ -2572,22 +2354,21 @@ function updateWorld(){
 }
 
 
-// ======================================
-// START WORLD
-// ======================================
+// ========================================
+// START
+// ========================================
 
 createChunk(
     0,
     0
 );
 
-
 updateWorld();
 
 
-// ======================================
+// ========================================
 // LOOP
-// ======================================
+// ========================================
 
 let previous =
     performance.now();
@@ -2597,7 +2378,7 @@ let accumulator =
     0;
 
 
-const FIXED_STEP =
+const FIXED =
     1/120;
 
 
@@ -2623,7 +2404,7 @@ function animate(now){
     dt =
         Math.min(
             dt,
-            0.1
+            .1
         );
 
 
@@ -2632,17 +2413,15 @@ function animate(now){
 
 
     while(
-        accumulator >=
-        FIXED_STEP
+        accumulator >= FIXED
     ){
 
         updatePhysics(
-            FIXED_STEP
+            FIXED
         );
 
-
         accumulator -=
-            FIXED_STEP;
+            FIXED;
     }
 
 
@@ -2654,8 +2433,7 @@ function animate(now){
 
 
     if(
-        worldTimer >
-        0.25
+        worldTimer>.2
     ){
 
         updateWorld();
@@ -2687,9 +2465,9 @@ requestAnimationFrame(
 );
 
 
-// ======================================
+// ========================================
 // RESIZE
-// ======================================
+// ========================================
 
 addEventListener(
     "resize",
@@ -2712,7 +2490,7 @@ addEventListener(
         renderer.setPixelRatio(
             Math.min(
                 devicePixelRatio,
-                1.5
+                1.4
             )
         );
     }
