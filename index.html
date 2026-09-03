@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-
-<title>UNMAPPED World</title>
+<title>UNMAPPED</title>
 
 <style>
 html,body{
     margin:0;
+    padding:0;
     width:100%;
     height:100%;
     overflow:hidden;
-    background:#86ccef;
-    touch-action:none;
+    background:#151b2b;
     font-family:Arial,sans-serif;
+    touch-action:none;
 }
 
 #game{
@@ -23,114 +23,117 @@ html,body{
     top:0;
     width:100%;
     height:100%;
-    z-index:1;
     display:block;
-    touch-action:none;
+}
+
+#status{
+    position:fixed;
+    left:50%;
+    top:18px;
+    transform:translateX(-50%);
+    padding:8px 14px;
+    border-radius:8px;
+    background:rgba(0,0,0,.65);
+    color:white;
+    font-size:13px;
+    z-index:20;
+    pointer-events:none;
 }
 
 #mobile{
     position:fixed;
     inset:0;
-    z-index:20;
+    z-index:10;
     pointer-events:none;
 }
 
 #joystick{
     position:absolute;
-    left:22px;
-    bottom:25px;
+    left:25px;
+    bottom:28px;
     width:130px;
     height:130px;
     border-radius:50%;
-    background:rgba(0,0,0,.18);
-    border:2px solid rgba(255,255,255,.6);
+    background:rgba(255,255,255,.12);
+    border:2px solid rgba(255,255,255,.28);
     pointer-events:auto;
 }
 
 #stick{
     position:absolute;
-    width:56px;
-    height:56px;
-    left:50%;
-    top:50%;
-    transform:translate(-50%,-50%);
+    left:40px;
+    top:40px;
+    width:50px;
+    height:50px;
     border-radius:50%;
-    background:rgba(255,255,255,.55);
-    border:2px solid rgba(255,255,255,.8);
+    background:rgba(255,255,255,.38);
+    border:2px solid rgba(255,255,255,.55);
 }
 
 .button{
     position:absolute;
-    pointer-events:auto;
-    width:82px;
-    height:82px;
-    border-radius:50%;
-    border:2px solid rgba(255,255,255,.65);
-    background:rgba(0,0,0,.32);
+    border:2px solid rgba(255,255,255,.3);
+    background:rgba(255,255,255,.15);
     color:white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;
+    user-select:none;
+    pointer-events:auto;
     font-weight:bold;
-    font-size:13px;
-    touch-action:none;
+    text-shadow:0 2px 4px #000;
 }
 
 #jump{
-    right:25px;
-    bottom:35px;
+    right:28px;
+    bottom:105px;
+    width:78px;
+    height:78px;
 }
 
 #run{
-    right:125px;
-    bottom:42px;
-    width:68px;
-    height:68px;
-}
-
-#status{
-    position:fixed;
-    z-index:30;
-    left:50%;
-    top:15px;
-    transform:translateX(-50%);
-    padding:7px 12px;
-    border-radius:8px;
-    background:rgba(0,0,0,.35);
-    color:white;
+    right:120px;
+    bottom:35px;
+    width:64px;
+    height:64px;
     font-size:12px;
-    pointer-events:none;
 }
 
 #crosshair{
     position:fixed;
-    z-index:10;
     left:50%;
     top:50%;
-    width:10px;
-    height:10px;
-    transform:translate(-50%,-50%);
+    width:8px;
+    height:8px;
+    margin-left:-4px;
+    margin-top:-4px;
+    z-index:5;
     pointer-events:none;
 }
 
-#crosshair:before{
-    content:"";
-    position:absolute;
-    left:4px;
-    top:0;
-    width:2px;
-    height:10px;
-    background:white;
-}
-
+#crosshair:before,
 #crosshair:after{
     content:"";
     position:absolute;
-    left:0;
-    top:4px;
-    width:10px;
-    height:2px;
-    background:white;
+    background:rgba(255,255,255,.85);
 }
 
-@media(min-width:800px){
+#crosshair:before{
+    left:3px;
+    top:0;
+    width:2px;
+    height:8px;
+}
+
+#crosshair:after{
+    left:0;
+    top:3px;
+    width:8px;
+    height:2px;
+}
+
+@media (min-width:900px){
     #mobile{
         display:none;
     }
@@ -142,670 +145,723 @@ html,body{
 
 <canvas id="game"></canvas>
 
+<div id="status">STARTING WORLD...</div>
 <div id="crosshair"></div>
 
-<div id="status">WORLD STARTING...</div>
-
 <div id="mobile">
-
     <div id="joystick">
         <div id="stick"></div>
     </div>
 
-    <button id="run" class="button">
-        RUN
-    </button>
-
-    <button id="jump" class="button">
-        JUMP
-    </button>
-
+    <div id="jump" class="button">JUMP</div>
+    <div id="run" class="button">RUN</div>
 </div>
 
 <script>
 "use strict";
 
 const canvas=document.getElementById("game");
-const gl=canvas.getContext("webgl",{antialias:false});
-
 const status=document.getElementById("status");
 
-if(!gl){
-    status.textContent="WebGL IS NOT AVAILABLE";
-    throw new Error("WebGL unavailable");
-}
+let gl;
+let program;
 
-const vertexSource=`
-attribute vec3 aPosition;
-attribute vec3 aColor;
+let positionBuffer;
+let colorBuffer;
+let indexBuffer;
 
-uniform mat4 uProjection;
-uniform mat4 uView;
+let aPosition;
+let aColor;
+let uProjection;
+let uView;
+let uLight;
 
-varying vec3 vColor;
+let projection=new Float32Array(16);
+let view=new Float32Array(16);
 
-void main(){
-    vColor=aColor;
-    gl_Position=uProjection*uView*vec4(aPosition,1.0);
-}
-`;
+const WORLD={
+    chunkSize:100,
+    grid:16,
+    renderRadius:2,
+    chunks:new Map()
+};
 
-const fragmentSource=`
-precision mediump float;
+const player={
+    x:0,
+    y:12,
+    z:20,
+    vy:0,
+    yaw:0,
+    pitch:-0.08,
+    height:1.8,
+    radius:.35,
+    grounded:false
+};
 
-varying vec3 vColor;
+const keys={};
 
-void main(){
-    gl_FragColor=vec4(vColor,1.0);
-}
-`;
-
-function shader(type,source){
-
-    const s=gl.createShader(type);
-
-    gl.shaderSource(s,source);
-
-    gl.compileShader(s);
-
-    if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){
-        throw new Error(
-            gl.getShaderInfoLog(s)
-        );
-    }
-
-    return s;
-}
-
-const program=gl.createProgram();
-
-gl.attachShader(
-    program,
-    shader(
-        gl.VERTEX_SHADER,
-        vertexSource
-    )
-);
-
-gl.attachShader(
-    program,
-    shader(
-        gl.FRAGMENT_SHADER,
-        fragmentSource
-    )
-);
-
-gl.linkProgram(program);
-
-if(!gl.getProgramParameter(
-    program,
-    gl.LINK_STATUS
-)){
-    throw new Error(
-        gl.getProgramInfoLog(program)
-    );
-}
-
-gl.useProgram(program);
-
-const aPosition=
-    gl.getAttribLocation(
-        program,
-        "aPosition"
-    );
-
-const aColor=
-    gl.getAttribLocation(
-        program,
-        "aColor"
-    );
-
-const uProjection=
-    gl.getUniformLocation(
-        program,
-        "uProjection"
-    );
-
-const uView=
-    gl.getUniformLocation(
-        program,
-        "uView"
-    );
-
-gl.enableVertexAttribArray(aPosition);
-gl.enableVertexAttribArray(aColor);
-
-gl.enable(gl.DEPTH_TEST);
-
-gl.depthFunc(gl.LEQUAL);
-
-gl.enable(gl.CULL_FACE);
-
-const SEED=918273;
-
-const CHUNK=48;
-
-const GRID=20;
-
-const VIEW=3;
-
-const PLAYER_HEIGHT=1.8;
-
-const WALK=5.5;
-
-const RUN=9;
-
-const JUMP=7.5;
-
-const GRAVITY=21;
-
-let px=0;
-
-let pz=0;
-
-let py=5;
-
-let vy=0;
-
-let grounded=false;
-
-let yaw=0;
-
-let pitch=0;
-
+let joystickX=0;
+let joystickY=0;
 let running=false;
 
-let worldTime=8;
-
 let lastTime=performance.now();
+let worldTime=0;
 
-const chunks=new Map();
+let cameraTouchId=null;
+let lastTouchX=0;
+let lastTouchY=0;
 
-const keys={
-    w:false,
-    a:false,
-    s:false,
-    d:false,
-    shift:false
-};
+function fail(message){
+    status.style.display="block";
+    status.style.background="rgba(120,0,0,.9)";
+    status.textContent="ERROR: "+message;
+}
 
-const joy={
-    active:false,
-    id:null,
-    x:0,
-    y:0
-};
+function clamp(v,a,b){
+    return Math.max(a,Math.min(b,v));
+}
 
-function hash(x,z){
+function lerp(a,b,t){
+    return a+(b-a)*t;
+}
 
-    let n=
-        Math.sin(
-            x*127.1+
-            z*311.7+
-            SEED
-        )*43758.5453;
+function smooth(t){
+    return t*t*(3-2*t);
+}
 
+function hash2(x,z){
+    let n=Math.sin(x*127.1+z*311.7)*43758.5453123;
     return n-Math.floor(n);
 }
 
-function smooth(x){
-    return x*x*(3-2*x);
+function noise(x,z){
+    const x0=Math.floor(x);
+    const z0=Math.floor(z);
+    const fx=x-x0;
+    const fz=z-z0;
+
+    const a=hash2(x0,z0);
+    const b=hash2(x0+1,z0);
+    const c=hash2(x0,z0+1);
+    const d=hash2(x0+1,z0+1);
+
+    const sx=smooth(fx);
+    const sz=smooth(fz);
+
+    return lerp(
+        lerp(a,b,sx),
+        lerp(c,d,sx),
+        sz
+    );
 }
 
-function noise(x,z,scale){
-
-    const sx=x/scale;
-    const sz=z/scale;
-
-    const x0=Math.floor(sx);
-    const z0=Math.floor(sz);
-
-    const x1=x0+1;
-    const z1=z0+1;
-
-    const tx=smooth(sx-x0);
-    const tz=smooth(sz-z0);
-
-    const a=hash(x0,z0);
-    const b=hash(x1,z0);
-    const c=hash(x0,z1);
-    const d=hash(x1,z1);
-
-    const ab=a+(b-a)*tx;
-    const cd=c+(d-c)*tx;
-
-    return ab+(cd-ab)*tz;
-}
-
-function fbm(x,z,scale){
-
+function fbm(x,z){
     let value=0;
-    let amp=.5;
-    let freq=1;
-    let total=0;
+    let amplitude=.5;
+    let frequency=.008;
 
-    for(let i=0;i<4;i++){
-
-        value+=
-            noise(
-                x,
-                z,
-                scale/freq
-            )*amp;
-
-        total+=amp;
-
-        amp*=.5;
-        freq*=2;
+    for(let i=0;i<5;i++){
+        value+=noise(x*frequency,z*frequency)*amplitude;
+        frequency*=2;
+        amplitude*=.5;
     }
 
-    return value/total;
+    return value;
 }
 
-function height(x,z){
+function biomeAt(x,z){
+    const large=fbm(x+3000,z-2000);
+    const medium=fbm(x-5000,z+4000);
 
-    const continent=
-        fbm(
-            x+1000,
-            z-500,
-            170
-        );
+    if(large<.27){
+        return "water";
+    }
 
-    const hills=
-        fbm(
-            x-500,
-            z+700,
-            58
-        );
+    if(large<.39){
+        return "sand";
+    }
 
-    const detail=
-        fbm(
-            x+800,
-            z+100,
-            18
-        );
+    if(medium>.67){
+        return "rock";
+    }
 
-    let h=
-        (continent-.5)*7+
-        (hills-.5)*8+
-        (detail-.5)*1.5;
+    if(medium<.30){
+        return "forest";
+    }
 
-    const mountain=
-        fbm(
-            x-1900,
-            z+1600,
-            115
-        );
+    return "grass";
+}
 
-    if(mountain>.67){
-        h+=(mountain-.67)*55;
+function heightAt(x,z){
+    const b=biomeAt(x,z);
+
+    const broad=fbm(x+900,z-700);
+    const detail=fbm(x*1.7-200,z*1.7+500);
+
+    let h=0;
+
+    if(b==="water"){
+        h=-1.2;
+    }else if(b==="sand"){
+        h=-.35+detail*.4;
+    }else if(b==="rock"){
+        h=4+broad*8+detail*3;
+    }else if(b==="forest"){
+        h=1+broad*4+detail*1.8;
+    }else{
+        h=.7+broad*3+detail*1.2;
     }
 
     return h;
 }
 
-function moisture(x,z){
+function terrainColor(b){
+    if(b==="water"){
+        return [.08,.25,.48];
+    }
 
-    return fbm(
-        x+3000,
-        z-4000,
-        70
-    );
+    if(b==="sand"){
+        return [.68,.58,.36];
+    }
+
+    if(b==="rock"){
+        return [.34,.36,.38];
+    }
+
+    if(b==="forest"){
+        return [.10,.32,.12];
+    }
+
+    return [.25,.48,.16];
 }
 
-function temperature(x,z){
+function createShader(type,source){
+    const shader=gl.createShader(type);
 
-    return fbm(
-        x-5000,
-        z+1000,
-        90
-    );
+    gl.shaderSource(shader,source);
+    gl.compileShader(shader);
+
+    if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS)){
+        throw new Error(gl.getShaderInfoLog(shader));
+    }
+
+    return shader;
 }
 
-function biome(x,z){
+function createProgram(){
+    const vertexSource=`
+        attribute vec3 aPosition;
+        attribute vec3 aColor;
 
-    const h=height(x,z);
-    const m=moisture(x,z);
-    const t=temperature(x,z);
+        uniform mat4 uProjection;
+        uniform mat4 uView;
 
-    if(h<-1.8){
-        return 0;
+        varying vec3 vColor;
+
+        void main(){
+            vColor=aColor;
+            gl_Position=uProjection*uView*vec4(aPosition,1.0);
+        }
+    `;
+
+    const fragmentSource=`
+        precision mediump float;
+
+        uniform float uLight;
+
+        varying vec3 vColor;
+
+        void main(){
+            float brightness=max(uLight,.28);
+            gl_FragColor=vec4(vColor*brightness,1.0);
+        }
+    `;
+
+    const vs=createShader(gl.VERTEX_SHADER,vertexSource);
+    const fs=createShader(gl.FRAGMENT_SHADER,fragmentSource);
+
+    program=gl.createProgram();
+
+    gl.attachShader(program,vs);
+    gl.attachShader(program,fs);
+
+    gl.linkProgram(program);
+
+    if(!gl.getProgramParameter(program,gl.LINK_STATUS)){
+        throw new Error(gl.getProgramInfoLog(program));
     }
 
-    if(h<-.2){
-        return 1;
-    }
+    gl.useProgram(program);
 
-    if(h>15){
-        return 8;
-    }
+    aPosition=gl.getAttribLocation(program,"aPosition");
+    aColor=gl.getAttribLocation(program,"aColor");
 
-    if(h>8){
-        return 7;
-    }
-
-    if(t>.73&&m<.34){
-        return 6;
-    }
-
-    if(m>.68){
-        return 5;
-    }
-
-    if(m>.52){
-        return 4;
-    }
-
-    if(m<.3){
-        return 3;
-    }
-
-    return 2;
+    uProjection=gl.getUniformLocation(program,"uProjection");
+    uView=gl.getUniformLocation(program,"uView");
+    uLight=gl.getUniformLocation(program,"uLight");
 }
 
-const biomeColors=[
-    [0.10,0.40,0.65],
-    [0.72,0.63,0.39],
-    [0.40,0.57,0.25],
-    [0.55,0.46,0.25],
-    [0.29,0.57,0.25],
-    [0.20,0.40,0.20],
-    [0.70,0.53,0.30],
-    [0.40,0.40,0.40],
-    [0.34,0.34,0.34]
-];
+function perspective(out,fovy,aspect,near,far){
+    const f=1/Math.tan(fovy/2);
+    const nf=1/(near-far);
 
-function terrainNormal(x,z){
+    out[0]=f/aspect;
+    out[1]=0;
+    out[2]=0;
+    out[3]=0;
 
-    const e=.4;
+    out[4]=0;
+    out[5]=f;
+    out[6]=0;
+    out[7]=0;
 
-    const l=height(x-e,z);
-    const r=height(x+e,z);
-    const d=height(x,z-e);
-    const u=height(x,z+e);
+    out[8]=0;
+    out[9]=0;
+    out[10]=(far+near)*nf;
+    out[11]=-1;
 
-    let nx=l-r;
-    let ny=e*2;
-    let nz=d-u;
+    out[12]=0;
+    out[13]=0;
+    out[14]=(2*far*near)*nf;
+    out[15]=0;
+}
 
-    const len=
-        Math.sqrt(
-            nx*nx+
-            ny*ny+
-            nz*nz
-        );
+function normalize(x,y,z){
+    const l=Math.hypot(x,y,z)||1;
+    return [x/l,y/l,z/l];
+}
 
+function cross(a,b){
     return [
-        nx/len,
-        ny/len,
-        nz/len
+        a[1]*b[2]-a[2]*b[1],
+        a[2]*b[0]-a[0]*b[2],
+        a[0]*b[1]-a[1]*b[0]
     ];
 }
 
-function makeChunk(cx,cz){
+function dot(a,b){
+    return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+}
 
-    const key=cx+","+cz;
+function lookAt(out,eye,center,up){
+    const z=normalize(
+        eye[0]-center[0],
+        eye[1]-center[1],
+        eye[2]-center[2]
+    );
 
-    if(chunks.has(key)){
-        return;
+    const x=normalize(
+        ...cross(up,z)
+    );
+
+    const y=cross(z,x);
+
+    out[0]=x[0];
+    out[1]=y[0];
+    out[2]=z[0];
+    out[3]=0;
+
+    out[4]=x[1];
+    out[5]=y[1];
+    out[6]=z[1];
+    out[7]=0;
+
+    out[8]=x[2];
+    out[9]=y[2];
+    out[10]=z[2];
+    out[11]=0;
+
+    out[12]=-dot(x,eye);
+    out[13]=-dot(y,eye);
+    out[14]=-dot(z,eye);
+    out[15]=1;
+}
+
+function resize(){
+    const dpr=Math.min(window.devicePixelRatio||1,2);
+
+    const w=Math.max(1,Math.floor(innerWidth*dpr));
+    const h=Math.max(1,Math.floor(innerHeight*dpr));
+
+    if(canvas.width!==w||canvas.height!==h){
+        canvas.width=w;
+        canvas.height=h;
     }
 
+    canvas.style.width=innerWidth+"px";
+    canvas.style.height=innerHeight+"px";
+
+    gl.viewport(0,0,canvas.width,canvas.height);
+
+    perspective(
+        projection,
+        Math.PI/3,
+        canvas.width/canvas.height,
+        .05,
+        1200
+    );
+}
+
+function chunkKey(cx,cz){
+    return cx+","+cz;
+}
+
+function generateChunk(cx,cz){
+    const key=chunkKey(cx,cz);
+
+    if(WORLD.chunks.has(key)){
+        return WORLD.chunks.get(key);
+    }
+
+    const N=12;
+    const step=WORLD.chunkSize/N;
+
+    const positions=[];
+    const colors=[];
+    const indices=[];
+
+    for(let z=0;z<=N;z++){
+        for(let x=0;x<=N;x++){
+
+            const wx=cx*WORLD.chunkSize+x*step;
+            const wz=cz*WORLD.chunkSize+z*step;
+
+            const h=heightAt(wx,wz);
+            const b=biomeAt(wx,wz);
+
+            const c=terrainColor(b);
+
+            positions.push(wx,h,wz);
+            colors.push(c[0],c[1],c[2]);
+        }
+    }
+
+    for(let z=0;z<N;z++){
+        for(let x=0;x<N;x++){
+
+            const a=z*(N+1)+x;
+            const b=a+1;
+            const c=a+(N+1);
+            const d=c+1;
+
+            indices.push(a,c,b);
+            indices.push(b,c,d);
+        }
+    }
+
+    const chunk={
+        positions:new Float32Array(positions),
+        colors:new Float32Array(colors),
+        indices:new Uint16Array(indices)
+    };
+
+    WORLD.chunks.set(key,chunk);
+
+    return chunk;
+}
+
+function buildVegetation(){
+    const data=[];
+
+    const radius=220;
+    const spacing=12;
+
+    for(let x=-radius;x<=radius;x+=spacing){
+        for(let z=-radius;z<=radius;z+=spacing){
+
+            const r=hash2(x*3.7,z*8.1);
+
+            if(r<.72){
+                continue;
+            }
+
+            const wx=x+(hash2(x+17,z+91)-.5)*8;
+            const wz=z+(hash2(x+41,z+13)-.5)*8;
+
+            const b=biomeAt(wx,wz);
+
+            if(b==="forest"&&r>.76){
+                data.push({
+                    type:"tree",
+                    x:wx,
+                    z:wz,
+                    y:heightAt(wx,wz)
+                });
+            }else if(b==="grass"&&r>.94){
+                data.push({
+                    type:"flower",
+                    x:wx,
+                    z:wz,
+                    y:heightAt(wx,wz)
+                });
+            }else if(b==="rock"&&r>.91){
+                data.push({
+                    type:"rock",
+                    x:wx,
+                    z:wz,
+                    y:heightAt(wx,wz)
+                });
+            }
+        }
+    }
+
+    return data;
+}
+
+let vegetation=[];
+
+function addCube(vertices,colors,indices,x,y,z,sx,sy,sz,color){
+    const base=vertices.length/3;
+
+    const x0=x-sx;
+    const x1=x+sx;
+    const y0=y;
+    const y1=y+sy;
+    const z0=z-sz;
+    const z1=z+sz;
+
+    vertices.push(
+        x0,y0,z0,
+        x1,y0,z0,
+        x1,y1,z0,
+        x0,y1,z0,
+
+        x0,y0,z1,
+        x1,y0,z1,
+        x1,y1,z1,
+        x0,y1,z1
+    );
+
+    for(let i=0;i<8;i++){
+        colors.push(color[0],color[1],color[2]);
+    }
+
+    indices.push(
+        base,base+1,base+2,
+        base,base+2,base+3,
+
+        base+4,base+6,base+5,
+        base+4,base+7,base+6,
+
+        base,base+4,base+5,
+        base,base+5,base+1,
+
+        base+3,base+2,base+6,
+        base+3,base+6,base+7,
+
+        base+1,base+5,base+6,
+        base+1,base+6,base+2,
+
+        base,base+3,base+7,
+        base,base+7,base+4
+    );
+}
+
+function buildObjectMesh(){
     const vertices=[];
     const colors=[];
     const indices=[];
 
-    const size=GRID+1;
+    for(const o of vegetation){
 
-    for(let z=0;z<=GRID;z++){
+        if(o.type==="tree"){
 
-        for(let x=0;x<=GRID;x++){
-
-            const wx=
-                cx*CHUNK+
-                x/GRID*CHUNK;
-
-            const wz=
-                cz*CHUNK+
-                z/GRID*CHUNK;
-
-            const wy=
-                height(
-                    wx,
-                    wz
-                );
-
-            vertices.push(
-                wx,
-                wy,
-                wz
+            addCube(
+                vertices,
+                colors,
+                indices,
+                o.x,
+                o.y,
+                o.z,
+                .45,
+                5,
+                .45,
+                [.25,.12,.045]
             );
 
-            const b=
-                biome(
-                    wx,
-                    wz
-                );
+            addCube(
+                vertices,
+                colors,
+                indices,
+                o.x,
+                o.y+4,
+                o.z,
+                2.4,
+                2.4,
+                2.4,
+                [.08,.28,.09]
+            );
 
-            const c=
-                biomeColors[b];
+        }else if(o.type==="rock"){
 
-            colors.push(
-                c[0],
-                c[1],
-                c[2]
+            addCube(
+                vertices,
+                colors,
+                indices,
+                o.x,
+                o.y,
+                o.z,
+                1.2,
+                1.4,
+                1.1,
+                [.35,.37,.38]
+            );
+
+        }else if(o.type==="flower"){
+
+            addCube(
+                vertices,
+                colors,
+                indices,
+                o.x,
+                o.y,
+                o.z,
+                .08,
+                .7,
+                .08,
+                [.15,.35,.08]
+            );
+
+            addCube(
+                vertices,
+                colors,
+                indices,
+                o.x,
+                o.y+.7,
+                o.z,
+                .22,
+                .22,
+                .22,
+                [.8,.55,.12]
             );
         }
     }
 
-    for(let z=0;z<GRID;z++){
-
-        for(let x=0;x<GRID;x++){
-
-            const a=
-                z*size+x;
-
-            const b=a+1;
-
-            const c=
-                a+size;
-
-            const d=c+1;
-
-            indices.push(
-                a,c,b,
-                b,c,d
-            );
-        }
-    }
-
-    const positionBuffer=
-        gl.createBuffer();
-
-    gl.bindBuffer(
-        gl.ARRAY_BUFFER,
-        positionBuffer
-    );
-
-    gl.bufferData(
-        gl.ARRAY_BUFFER,
-        new Float32Array(vertices),
-        gl.STATIC_DRAW
-    );
-
-    const colorBuffer=
-        gl.createBuffer();
-
-    gl.bindBuffer(
-        gl.ARRAY_BUFFER,
-        colorBuffer
-    );
-
-    gl.bufferData(
-        gl.ARRAY_BUFFER,
-        new Float32Array(colors),
-        gl.STATIC_DRAW
-    );
-
-    const indexBuffer=
-        gl.createBuffer();
-
-    gl.bindBuffer(
-        gl.ELEMENT_ARRAY_BUFFER,
-        indexBuffer
-    );
-
-    gl.bufferData(
-        gl.ELEMENT_ARRAY_BUFFER,
-        new Uint32Array(indices),
-        gl.STATIC_DRAW
-    );
-
-    chunks.set(
-        key,
-        {
-            position:positionBuffer,
-            color:colorBuffer,
-            index:indexBuffer,
-            count:indices.length
-        }
-    );
+    return {
+        positions:new Float32Array(vertices),
+        colors:new Float32Array(colors),
+        indices:new Uint16Array(indices)
+    };
 }
 
-function updateChunks(){
+let objectMesh=null;
 
-    const cx=
-        Math.floor(
-            px/CHUNK
-        );
+function refreshChunks(){
+    const cx=Math.floor(player.x/WORLD.chunkSize);
+    const cz=Math.floor(player.z/WORLD.chunkSize);
 
-    const cz=
-        Math.floor(
-            pz/CHUNK
-        );
-
-    for(
-        let x=cx-VIEW;
-        x<=cx+VIEW;
-        x++
-    ){
-
-        for(
-            let z=cz-VIEW;
-            z<=cz+VIEW;
-            z++
-        ){
-
-            makeChunk(
-                x,
-                z
-            );
+    for(let z=-WORLD.renderRadius;z<=WORLD.renderRadius;z++){
+        for(let x=-WORLD.renderRadius;x<=WORLD.renderRadius;x++){
+            generateChunk(cx+x,cz+z);
         }
     }
 }
 
-function matrixPerspective(
-    fov,
-    aspect,
-    near,
-    far
-){
+function updateCamera(){
+    const cp=Math.cos(player.pitch);
+    const sp=Math.sin(player.pitch);
 
-    const f=
-        1/
-        Math.tan(
-            fov/2
-        );
+    const forward=[
+        -Math.sin(player.yaw)*cp,
+        sp,
+        -Math.cos(player.yaw)*cp
+    ];
 
-    const nf=
-        1/
-        (near-far);
+    const eye=[
+        player.x,
+        player.y,
+        player.z
+    ];
 
-    return new Float32Array([
-        f/aspect,0,0,0,
-        0,f,0,0,
-        0,0,(far+near)*nf,-1,
-        0,0,(2*far*near)*nf,0
-    ]);
+    const center=[
+        eye[0]+forward[0],
+        eye[1]+forward[1],
+        eye[2]+forward[2]
+    ];
+
+    lookAt(
+        view,
+        eye,
+        center,
+        [0,1,0]
+    );
 }
 
-function matrixView(){
+function drawMesh(mesh){
+    if(!mesh||mesh.indices.length===0){
+        return;
+    }
 
-    const cy=Math.cos(yaw);
-    const sy=Math.sin(yaw);
+    gl.bindBuffer(gl.ARRAY_BUFFER,positionBuffer);
+    gl.bufferData(
+        gl.ARRAY_BUFFER,
+        mesh.positions,
+        gl.DYNAMIC_DRAW
+    );
 
-    const cp=Math.cos(pitch);
-    const sp=Math.sin(pitch);
-
-    const fx=-sy*cp;
-    const fy=sp;
-    const fz=-cy*cp;
-
-    const rx=cy;
-    const ry=0;
-    const rz=-sy;
-
-    const ux=
-        ry*fz-
-        rz*fy;
-
-    const uy=
-        rz*fx-
-        rx*fz;
-
-    const uz=
-        rx*fy-
-        ry*fx;
-
-    const tx=
-        -(rx*px+
-        ry*py+
-        rz*pz);
-
-    const ty=
-        -(ux*px+
-        uy*py+
-        uz*pz);
-
-    const tz=
-        -(
-            -fx*px+
-            -fy*py+
-            -fz*pz
-        );
-
-    return new Float32Array([
-        rx,ux,-fx,0,
-        ry,uy,-fy,0,
-        rz,uz,-fz,0,
-        tx,ty,tz,1
-    ]);
-}
-
-function draw(){
-
-    gl.viewport(
+    gl.enableVertexAttribArray(aPosition);
+    gl.vertexAttribPointer(
+        aPosition,
+        3,
+        gl.FLOAT,
+        false,
         0,
-        0,
-        canvas.width,
-        canvas.height
+        0
     );
 
-    const daylight=
-        Math.max(
-            0,
-            Math.sin(
-                worldTime/24*
-                Math.PI*2
-            )
-        );
+    gl.bindBuffer(gl.ARRAY_BUFFER,colorBuffer);
+    gl.bufferData(
+        gl.ARRAY_BUFFER,
+        mesh.colors,
+        gl.DYNAMIC_DRAW
+    );
+
+    gl.enableVertexAttribArray(aColor);
+    gl.vertexAttribPointer(
+        aColor,
+        3,
+        gl.FLOAT,
+        false,
+        0,
+        0
+    );
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,indexBuffer);
+    gl.bufferData(
+        gl.ELEMENT_ARRAY_BUFFER,
+        mesh.indices,
+        gl.DYNAMIC_DRAW
+    );
+
+    gl.drawElements(
+        gl.TRIANGLES,
+        mesh.indices.length,
+        gl.UNSIGNED_SHORT,
+        0
+    );
+}
+
+function daylight(){
+    const sun=Math.sin(worldTime*Math.PI*2);
+
+    return clamp(
+        .42+.58*Math.max(0,sun),
+        .42,
+        1
+    );
+}
+
+function render(){
+    const light=daylight();
+
+    const skyR=lerp(.025,.38,light);
+    const skyG=lerp(.045,.65,light);
+    const skyB=lerp(.09,.95,light);
 
     gl.clearColor(
-        .05+
-        daylight*.25,
-        .10+
-        daylight*.42,
-        .18+
-        daylight*.65,
+        skyR,
+        skyG,
+        skyB,
         1
     );
 
@@ -815,18 +871,6 @@ function draw(){
     );
 
     gl.useProgram(program);
-
-    const projection=
-        matrixPerspective(
-            Math.PI/3,
-            canvas.width/
-            canvas.height,
-            .1,
-            900
-        );
-
-    const view=
-        matrixView();
 
     gl.uniformMatrix4fv(
         uProjection,
@@ -840,492 +884,329 @@ function draw(){
         view
     );
 
-    for(const chunk of chunks.values()){
+    gl.uniform1f(
+        uLight,
+        light
+    );
 
-        gl.bindBuffer(
-            gl.ARRAY_BUFFER,
-            chunk.position
-        );
+    for(const chunk of WORLD.chunks.values()){
+        drawMesh(chunk);
+    }
 
-        gl.vertexAttribPointer(
-            aPosition,
-            3,
-            gl.FLOAT,
-            false,
-            0,
-            0
-        );
-
-        gl.bindBuffer(
-            gl.ARRAY_BUFFER,
-            chunk.color
-        );
-
-        gl.vertexAttribPointer(
-            aColor,
-            3,
-            gl.FLOAT,
-            false,
-            0,
-            0
-        );
-
-        gl.bindBuffer(
-            gl.ELEMENT_ARRAY_BUFFER,
-            chunk.index
-        );
-
-        gl.drawElements(
-            gl.TRIANGLES,
-            chunk.count,
-            gl.UNSIGNED_INT,
-            0
-        );
+    if(objectMesh){
+        drawMesh(objectMesh);
     }
 }
 
-function input(){
+function move(dt){
+    let ix=0;
+    let iy=0;
 
-    let x=0;
-    let z=0;
+    if(keys["KeyW"]) iy+=1;
+    if(keys["KeyS"]) iy-=1;
+    if(keys["KeyA"]) ix-=1;
+    if(keys["KeyD"]) ix+=1;
 
-    if(keys.w)z-=1;
-    if(keys.s)z+=1;
-    if(keys.a)x-=1;
-    if(keys.d)x+=1;
+    ix+=joystickX;
+    iy+=joystickY;
 
-    if(joy.active){
+    const length=Math.hypot(ix,iy);
 
-        x+=joy.x;
-        z+=joy.y;
+    if(length>1){
+        ix/=length;
+        iy/=length;
     }
 
-    const len=
-        Math.hypot(
-            x,
-            z
-        );
+    const speed=running?13:6;
 
-    if(len>1){
+    const forwardX=-Math.sin(player.yaw);
+    const forwardZ=-Math.cos(player.yaw);
 
-        x/=len;
-        z/=len;
-    }
+    const rightX=Math.cos(player.yaw);
+    const rightZ=-Math.sin(player.yaw);
 
-    return {
-        x:x,
-        z:z
-    };
-}
-
-function update(dt){
-
-    const move=input();
-
-    const speed=
-        running||
-        keys.shift
-        ?RUN
-        :WALK;
-
-    const forwardX=
-        -Math.sin(yaw);
-
-    const forwardZ=
-        -Math.cos(yaw);
-
-    const rightX=
-        Math.cos(yaw);
-
-    const rightZ=
-        -Math.sin(yaw);
-
-    px+=(
-        forwardX*move.z+
-        rightX*move.x
+    player.x+=(
+        forwardX*iy+
+        rightX*ix
     )*speed*dt;
 
-    pz+=(
-        forwardZ*move.z+
-        rightZ*move.x
+    player.z+=(
+        forwardZ*iy+
+        rightZ*ix
     )*speed*dt;
 
-    const ground=
-        height(
-            px,
-            pz
-        )+
-        PLAYER_HEIGHT;
+    const ground=heightAt(player.x,player.z);
 
-    vy-=
-        GRAVITY*dt;
-
-    py+=
-        vy*dt;
-
-    if(py<=ground){
-
-        py=ground;
-
-        vy=0;
-
-        grounded=true;
-    }
-    else{
-
-        grounded=false;
+    if(player.y<=ground+player.height){
+        player.y=ground+player.height;
+        player.vy=0;
+        player.grounded=true;
+    }else{
+        player.grounded=false;
     }
 
-    worldTime+=
-        dt*.45;
+    player.vy-=22*dt;
+    player.y+=player.vy*dt;
 
-    if(worldTime>=24){
-        worldTime-=24;
+    if(player.y<ground+player.height){
+        player.y=ground+player.height;
+        player.vy=0;
+        player.grounded=true;
     }
-
-    updateChunks();
 }
 
 function jump(){
-
-    if(!grounded){
-        return;
+    if(player.grounded){
+        player.vy=9;
+        player.grounded=false;
     }
-
-    vy=JUMP;
-
-    grounded=false;
 }
 
-const joystickElement=
-    document.getElementById(
-        "joystick"
-    );
-
-const stickElement=
-    document.getElementById(
-        "stick"
-    );
-
-function joystickMove(x,y){
-
-    const rect=
-        joystickElement.getBoundingClientRect();
-
-    const cx=
-        rect.left+
-        rect.width/2;
-
-    const cy=
-        rect.top+
-        rect.height/2;
-
-    let dx=x-cx;
-    let dy=y-cy;
-
-    const radius=42;
-
-    const distance=
-        Math.hypot(
-            dx,
-            dy
-        );
-
-    if(distance>radius){
-
-        dx=
-            dx/distance*
-            radius;
-
-        dy=
-            dy/distance*
-            radius;
-    }
-
-    joy.x=
-        dx/radius;
-
-    joy.y=
-        dy/radius;
-
-    stickElement.style.left=
-        "calc(50% + "+dx+"px)";
-
-    stickElement.style.top=
-        "calc(50% + "+dy+"px)";
-}
-
-function joystickReset(){
-
-    joy.active=false;
-    joy.id=null;
-    joy.x=0;
-    joy.y=0;
-
-    stickElement.style.left="50%";
-    stickElement.style.top="50%";
-}
-
-joystickElement.addEventListener(
-    "pointerdown",
-    function(e){
-
-        e.preventDefault();
-
-        joy.active=true;
-        joy.id=e.pointerId;
-
-        joystickElement.setPointerCapture(
-            e.pointerId
-        );
-
-        joystickMove(
-            e.clientX,
-            e.clientY
-        );
-    }
-);
-
-joystickElement.addEventListener(
-    "pointermove",
-    function(e){
-
-        if(
-            !joy.active||
-            e.pointerId!==joy.id
-        ){
-            return;
-        }
-
-        joystickMove(
-            e.clientX,
-            e.clientY
-        );
-    }
-);
-
-joystickElement.addEventListener(
-    "pointerup",
-    joystickReset
-);
-
-joystickElement.addEventListener(
-    "pointercancel",
-    joystickReset
-);
-
-document.getElementById(
-    "jump"
-).addEventListener(
-    "pointerdown",
-    function(e){
-
-        e.preventDefault();
-
-        jump();
-    }
-);
-
-const runButton=
-    document.getElementById(
-        "run"
-    );
-
-runButton.addEventListener(
-    "pointerdown",
-    function(e){
-
-        e.preventDefault();
-
-        running=true;
-    }
-);
-
-runButton.addEventListener(
-    "pointerup",
-    function(){
-        running=false;
-    }
-);
-
-runButton.addEventListener(
-    "pointercancel",
-    function(){
-        running=false;
-    }
-);
-
-let lookId=null;
-
-let lookX=0;
-
-let lookY=0;
-
-canvas.addEventListener(
-    "pointerdown",
-    function(e){
-
-        lookId=e.pointerId;
-
-        lookX=e.clientX;
-
-        lookY=e.clientY;
-
-        canvas.setPointerCapture(
-            e.pointerId
-        );
-    }
-);
-
-canvas.addEventListener(
-    "pointermove",
-    function(e){
-
-        if(e.pointerId!==lookId){
-            return;
-        }
-
-        const dx=
-            e.clientX-lookX;
-
-        const dy=
-            e.clientY-lookY;
-
-        lookX=e.clientX;
-        lookY=e.clientY;
-
-        yaw-=dx*.004;
-
-        pitch-=dy*.004;
-
-        pitch=
-            Math.max(
-                -1.45,
-                Math.min(
-                    1.45,
-                    pitch
-                )
-            );
-    }
-);
-
-canvas.addEventListener(
-    "pointerup",
-    function(e){
-
-        if(e.pointerId===lookId){
-            lookId=null;
-        }
-    }
-);
-
-window.addEventListener(
-    "keydown",
-    function(e){
-
-        const k=
-            e.key.toLowerCase();
-
-        if(k==="w")keys.w=true;
-        if(k==="a")keys.a=true;
-        if(k==="s")keys.s=true;
-        if(k==="d")keys.d=true;
-        if(k==="shift")keys.shift=true;
+function setupControls(){
+    window.addEventListener("keydown",e=>{
+        keys[e.code]=true;
 
         if(e.code==="Space"){
             jump();
         }
+
+        if(e.code==="ShiftLeft"||e.code==="ShiftRight"){
+            running=true;
+        }
+    });
+
+    window.addEventListener("keyup",e=>{
+        keys[e.code]=false;
+
+        if(e.code==="ShiftLeft"||e.code==="ShiftRight"){
+            running=false;
+        }
+    });
+
+    const joystick=document.getElementById("joystick");
+    const stick=document.getElementById("stick");
+
+    let joyId=null;
+
+    function updateJoy(clientX,clientY){
+        const r=joystick.getBoundingClientRect();
+
+        const cx=r.left+r.width/2;
+        const cy=r.top+r.height/2;
+
+        let dx=clientX-cx;
+        let dy=clientY-cy;
+
+        const max=40;
+        const len=Math.hypot(dx,dy);
+
+        if(len>max){
+            dx=dx/len*max;
+            dy=dy/len*max;
+        }
+
+        joystickX=dx/max;
+        joystickY=-dy/max;
+
+        stick.style.transform=
+            "translate("+dx+"px,"+dy+"px)";
     }
-);
 
-window.addEventListener(
-    "keyup",
-    function(e){
+    joystick.addEventListener("touchstart",e=>{
+        e.preventDefault();
 
-        const k=
-            e.key.toLowerCase();
+        const t=e.changedTouches[0];
+        joyId=t.identifier;
 
-        if(k==="w")keys.w=false;
-        if(k==="a")keys.a=false;
-        if(k==="s")keys.s=false;
-        if(k==="d")keys.d=false;
-        if(k==="shift")keys.shift=false;
+        updateJoy(t.clientX,t.clientY);
+    },{passive:false});
+
+    joystick.addEventListener("touchmove",e=>{
+        e.preventDefault();
+
+        for(const t of e.changedTouches){
+            if(t.identifier===joyId){
+                updateJoy(t.clientX,t.clientY);
+            }
+        }
+    },{passive:false});
+
+    function stopJoy(){
+        joyId=null;
+        joystickX=0;
+        joystickY=0;
+        stick.style.transform="translate(0px,0px)";
     }
-);
 
-function resize(){
+    joystick.addEventListener("touchend",stopJoy);
+    joystick.addEventListener("touchcancel",stopJoy);
 
-    const dpr=
-        Math.min(
-            window.devicePixelRatio||1,
-            1.5
-        );
+    const jumpButton=document.getElementById("jump");
 
-    canvas.width=
-        Math.floor(
-            window.innerWidth*dpr
-        );
+    jumpButton.addEventListener("touchstart",e=>{
+        e.preventDefault();
+        jump();
+    },{passive:false});
 
-    canvas.height=
-        Math.floor(
-            window.innerHeight*dpr
-        );
+    const runButton=document.getElementById("run");
 
-    canvas.style.width=
-        window.innerWidth+"px";
+    runButton.addEventListener("touchstart",e=>{
+        e.preventDefault();
+        running=true;
+    },{passive:false});
 
-    canvas.style.height=
-        window.innerHeight+"px";
+    runButton.addEventListener("touchend",e=>{
+        e.preventDefault();
+        running=false;
+    },{passive:false});
+
+    canvas.addEventListener("touchstart",e=>{
+        if(e.touches.length!==1){
+            return;
+        }
+
+        const t=e.touches[0];
+
+        if(
+            t.clientX<180&&
+            t.clientY>innerHeight-190
+        ){
+            return;
+        }
+
+        cameraTouchId=t.identifier;
+        lastTouchX=t.clientX;
+        lastTouchY=t.clientY;
+    },{passive:false});
+
+    canvas.addEventListener("touchmove",e=>{
+        e.preventDefault();
+
+        for(const t of e.changedTouches){
+
+            if(t.identifier!==cameraTouchId){
+                continue;
+            }
+
+            const dx=t.clientX-lastTouchX;
+            const dy=t.clientY-lastTouchY;
+
+            lastTouchX=t.clientX;
+            lastTouchY=t.clientY;
+
+            player.yaw-=dx*.006;
+            player.pitch-=dy*.004;
+
+            player.pitch=clamp(
+                player.pitch,
+                -1.45,
+                1.45
+            );
+        }
+    },{passive:false});
+
+    canvas.addEventListener("touchend",e=>{
+        for(const t of e.changedTouches){
+            if(t.identifier===cameraTouchId){
+                cameraTouchId=null;
+            }
+        }
+    });
+
+    canvas.addEventListener("touchcancel",e=>{
+        cameraTouchId=null;
+    });
 }
 
-window.addEventListener(
-    "resize",
-    resize
-);
+function init(){
+    try{
 
-resize();
+        gl=
+            canvas.getContext("webgl",{
+                alpha:false,
+                antialias:false,
+                depth:true,
+                powerPreference:"high-performance"
+            })||
+            canvas.getContext("experimental-webgl");
 
-py=
-    height(
-        px,
-        pz
-    )+
-    PLAYER_HEIGHT;
+        if(!gl){
+            throw new Error("WebGL is unavailable on this browser");
+        }
 
-updateChunks();
+        createProgram();
 
-status.textContent=
-    "WORLD READY";
+        positionBuffer=gl.createBuffer();
+        colorBuffer=gl.createBuffer();
+        indexBuffer=gl.createBuffer();
 
-setTimeout(
-    function(){
-        status.style.display="none";
-    },
-    1800
-);
+        gl.enable(gl.DEPTH_TEST);
+        gl.depthFunc(gl.LEQUAL);
+
+        // Culling is intentionally disabled while the renderer is being validated.
+        gl.disable(gl.CULL_FACE);
+
+        gl.disable(gl.BLEND);
+
+        resize();
+
+        window.addEventListener("resize",resize);
+
+        setupControls();
+
+        refreshChunks();
+
+        vegetation=buildVegetation();
+
+        objectMesh=buildObjectMesh();
+
+        player.y=heightAt(player.x,player.z)+player.height;
+
+        updateCamera();
+
+        status.textContent="WORLD READY";
+
+        requestAnimationFrame(loop);
+
+    }catch(error){
+        fail(error.message||String(error));
+        console.error(error);
+    }
+}
 
 function loop(now){
+    try{
 
-    const dt=
-        Math.min(
+        const dt=Math.min(
             (now-lastTime)/1000,
             .05
         );
 
-    lastTime=now;
+        lastTime=now;
 
-    update(dt);
+        worldTime+=dt/180;
 
-    draw();
+        if(worldTime>1){
+            worldTime-=1;
+        }
 
-    requestAnimationFrame(
-        loop
-    );
+        move(dt);
+
+        refreshChunks();
+
+        updateCamera();
+
+        render();
+
+        requestAnimationFrame(loop);
+
+    }catch(error){
+        fail(error.message||String(error));
+        console.error(error);
+    }
 }
 
-requestAnimationFrame(
-    loop
-);
+init();
 </script>
 
 </body>
