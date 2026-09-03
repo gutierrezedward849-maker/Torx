@@ -2,725 +2,1235 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grade 7 Science - Term 1 Test</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Advanced Mathematics Laboratory</title>
 
 <style>
-    * {
-        box-sizing: border-box;
-    }
+* {
+    box-sizing: border-box;
+}
 
-    body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-        background: #111;
-        color: #eee;
-        padding: 20px;
-    }
+body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    background: #0b0d12;
+    color: #e8eaf0;
+}
 
-    .container {
-        max-width: 800px;
-        margin: auto;
-    }
+header {
+    padding: 24px;
+    border-bottom: 1px solid #252a35;
+}
 
-    .header {
-        background: #1c1c1c;
-        border: 1px solid #333;
-        border-radius: 14px;
-        padding: 25px;
-        margin-bottom: 20px;
-    }
+h1 {
+    margin: 0;
+    font-size: 28px;
+}
 
-    h1 {
-        margin: 0 0 8px;
-        font-size: 27px;
-    }
+.subtitle {
+    color: #9ca3af;
+    margin-top: 6px;
+}
 
-    .subtitle {
-        color: #aaa;
-    }
+nav {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 12px;
+    border-bottom: 1px solid #252a35;
+}
 
-    .question {
-        background: #1b1b1b;
-        border: 1px solid #333;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 15px;
-    }
+button {
+    background: #171b24;
+    color: white;
+    border: 1px solid #303644;
+    padding: 9px 13px;
+    border-radius: 7px;
+    cursor: pointer;
+}
 
-    .question h3 {
-        margin-top: 0;
-        line-height: 1.4;
-    }
+button:hover {
+    background: #202532;
+}
 
-    label {
-        display: block;
-        background: #252525;
-        border: 1px solid #383838;
-        border-radius: 8px;
-        padding: 13px;
-        margin: 8px 0;
-        cursor: pointer;
-        transition: 0.15s;
-    }
+main {
+    max-width: 1100px;
+    margin: auto;
+    padding: 20px;
+}
 
-    label:hover {
-        background: #303030;
-    }
+section {
+    display: none;
+}
 
-    input[type="radio"] {
-        margin-right: 10px;
-    }
+section.active {
+    display: block;
+}
 
-    .submit {
-        width: 100%;
-        border: none;
-        border-radius: 10px;
-        padding: 17px;
-        background: #4b6cff;
-        color: white;
-        font-size: 18px;
-        font-weight: bold;
-        cursor: pointer;
-        margin-top: 10px;
-    }
+.card {
+    background: #11151d;
+    border: 1px solid #252a35;
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 15px;
+}
 
-    .submit:hover {
-        background: #3959e8;
-    }
+input, textarea, select {
+    width: 100%;
+    background: #090b10;
+    color: white;
+    border: 1px solid #303644;
+    border-radius: 6px;
+    padding: 10px;
+    margin: 5px 0 10px;
+}
 
-    #result {
-        display: none;
-        background: #1c1c1c;
-        border: 1px solid #444;
-        border-radius: 14px;
-        padding: 25px;
-        margin-top: 20px;
-    }
+textarea {
+    min-height: 110px;
+    font-family: monospace;
+}
 
-    .score {
-        font-size: 30px;
-        font-weight: bold;
-    }
+.output {
+    white-space: pre-wrap;
+    background: #080a0e;
+    border: 1px solid #252a35;
+    border-radius: 7px;
+    padding: 12px;
+    margin-top: 10px;
+    font-family: monospace;
+}
 
-    .correct {
-        border-color: #35c76f !important;
-        background: #16351f !important;
-    }
+canvas {
+    width: 100%;
+    max-width: 900px;
+    background: black;
+    border: 1px solid #252a35;
+}
 
-    .wrong {
-        border-color: #e05252 !important;
-        background: #351616 !important;
-    }
+h2 {
+    margin-top: 0;
+}
 
-    .answer {
-        color: #6ee88d;
-        font-weight: bold;
-        margin-top: 8px;
-    }
+.math {
+    font-family: Georgia, serif;
+    font-size: 18px;
+    color: #d7d9df;
+}
 
-    .unanswered {
-        border-color: #d6a934 !important;
-    }
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(250px,1fr));
+    gap: 12px;
+}
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<header>
+<h1>Advanced Mathematics Laboratory</h1>
+<div class="subtitle">
+A computational laboratory for higher mathematics
+</div>
+</header>
 
-<div class="header">
-    <h1>Grade 7 Science — Term 1 Test</h1>
-    <div class="subtitle">
-        50 Questions • Multiple Choice • Choose A, B, C, or D
-    </div>
+<nav>
+<button onclick="show('overview')">Overview</button>
+<button onclick="show('field')">Finite Fields</button>
+<button onclick="show('matrix')">Linear Algebra</button>
+<button onclick="show('complex')">Complex Analysis</button>
+<button onclick="show('calculus')">Calculus</button>
+<button onclick="show('ode')">Differential Equations</button>
+<button onclick="show('optimization')">Optimization</button>
+<button onclick="show('graph')">Graph Theory</button>
+<button onclick="show('information')">Information Theory</button>
+<button onclick="show('crypto')">Cryptography</button>
+<button onclick="show('elliptic')">Elliptic Curves</button>
+<button onclick="show('fractal')">Fractals</button>
+</nav>
+
+<main>
+
+<section id="overview" class="active">
+
+<div class="card">
+
+<h2>What is this?</h2>
+
+<p>
+This is an interactive mathematical computing system.
+Instead of simply displaying formulas, JavaScript performs
+actual mathematical algorithms inside the browser.
+</p>
+
+<p>
+It combines several major areas of advanced mathematics:
+</p>
+
+<div class="grid">
+
+<div>Abstract Algebra</div>
+<div>Number Theory</div>
+<div>Linear Algebra</div>
+<div>Complex Analysis</div>
+<div>Differential Equations</div>
+<div>Numerical Analysis</div>
+<div>Optimization</div>
+<div>Graph Theory</div>
+<div>Information Theory</div>
+<div>Cryptography</div>
+<div>Algebraic Geometry</div>
+<div>Fractal Geometry</div>
+
 </div>
 
-<form id="quiz">
-
-<!-- 1 -->
-<div class="question" id="q1">
-<h3>1. What is a scientific model?</h3>
-<label><input type="radio" name="q1" value="A"> A. A random guess</label>
-<label><input type="radio" name="q1" value="B"> B. A representation used to understand something</label>
-<label><input type="radio" name="q1" value="C"> C. A measurement tool</label>
-<label><input type="radio" name="q1" value="D"> D. A type of matter</label>
 </div>
 
-<!-- 2 -->
-<div class="question" id="q2">
-<h3>2. Which is an example of a scientific model?</h3>
-<label><input type="radio" name="q2" value="A"> A. Globe</label>
-<label><input type="radio" name="q2" value="B"> B. Stopwatch</label>
-<label><input type="radio" name="q2" value="C"> C. Thermometer</label>
-<label><input type="radio" name="q2" value="D"> D. Balance</label>
+<div class="card">
+
+<h2>Mathematical hierarchy</h2>
+
+<p class="math">
+Arithmetic → Algebra → Analysis → Geometry → Topology
+→ Abstract Algebra → Functional Analysis → Category Theory
+</p>
+
+<p>
+The program below implements computational fragments of many
+of these subjects.
+</p>
+
 </div>
 
-<!-- 3 -->
-<div class="question" id="q3">
-<h3>3. Scientific models are useful because they can:</h3>
-<label><input type="radio" name="q3" value="A"> A. Replace all experiments</label>
-<label><input type="radio" name="q3" value="B"> B. Make difficult concepts easier to understand</label>
-<label><input type="radio" name="q3" value="C"> C. Make matter disappear</label>
-<label><input type="radio" name="q3" value="D"> D. Stop particles from moving</label>
+</section>
+
+
+<section id="field">
+
+<div class="card">
+
+<h2>Finite Field GF(p)</h2>
+
+<p>
+A finite field is a mathematical system containing a finite
+number of elements where addition, subtraction,
+multiplication and division behave consistently.
+</p>
+
+<p class="math">
+GF(p) = {0,1,2,...,p−1}
+</p>
+
+<input id="fp" type="number" value="17">
+<input id="fa" type="number" value="7">
+<input id="fb" type="number" value="5">
+
+<button onclick="finiteField()">Calculate</button>
+
+<div id="fieldOut" class="output"></div>
+
 </div>
 
-<!-- 4 -->
-<div class="question" id="q4">
-<h3>4. A scientific model is usually:</h3>
-<label><input type="radio" name="q4" value="A"> A. An exact copy of reality</label>
-<label><input type="radio" name="q4" value="B"> B. A simplified representation</label>
-<label><input type="radio" name="q4" value="C"> C. Always made of metal</label>
-<label><input type="radio" name="q4" value="D"> D. Always invisible</label>
+</section>
+
+
+<section id="matrix">
+
+<div class="card">
+
+<h2>Matrix Algebra</h2>
+
+<p>
+Matrices represent linear transformations.
+They are fundamental to computer graphics, physics,
+machine learning and numerical mathematics.
+</p>
+
+<textarea id="matrixInput">
+1 2 3
+4 5 6
+7 8 10
+</textarea>
+
+<button onclick="matrixCalculate()">Analyze Matrix</button>
+
+<div id="matrixOut" class="output"></div>
+
 </div>
 
-<!-- 5 -->
-<div class="question" id="q5">
-<h3>5. Which model represents Earth?</h3>
-<label><input type="radio" name="q5" value="A"> A. Beaker</label>
-<label><input type="radio" name="q5" value="B"> B. Globe</label>
-<label><input type="radio" name="q5" value="C"> C. Balance</label>
-<label><input type="radio" name="q5" value="D"> D. Thermometer</label>
+</section>
+
+
+<section id="complex">
+
+<div class="card">
+
+<h2>Complex Analysis</h2>
+
+<p>
+Complex numbers extend the real numbers with
+</p>
+
+<p class="math">
+i² = −1
+</p>
+
+<input id="cr" value="1">
+<input id="ci" value="2">
+
+<button onclick="complexCalculate()">Calculate</button>
+
+<div id="complexOut" class="output"></div>
+
 </div>
 
-<!-- 6 -->
-<div class="question" id="q6">
-<h3>6. How are particles arranged in a solid?</h3>
-<label><input type="radio" name="q6" value="A"> A. Very far apart</label>
-<label><input type="radio" name="q6" value="B"> B. Close together and organized</label>
-<label><input type="radio" name="q6" value="C"> C. Completely separated</label>
-<label><input type="radio" name="q6" value="D"> D. Randomly floating everywhere</label>
-</div>
+</section>
 
-<!-- 7 -->
-<div class="question" id="q7">
-<h3>7. What do particles in a solid mainly do?</h3>
-<label><input type="radio" name="q7" value="A"> A. Fly freely</label>
-<label><input type="radio" name="q7" value="B"> B. Vibrate around fixed positions</label>
-<label><input type="radio" name="q7" value="C"> C. Disappear</label>
-<label><input type="radio" name="q7" value="D"> D. Move randomly across the container</label>
-</div>
 
-<!-- 8 -->
-<div class="question" id="q8">
-<h3>8. Why are solids difficult to compress?</h3>
-<label><input type="radio" name="q8" value="A"> A. Their particles are already close together</label>
-<label><input type="radio" name="q8" value="B"> B. Their particles are extremely far apart</label>
-<label><input type="radio" name="q8" value="C"> C. They contain no particles</label>
-<label><input type="radio" name="q8" value="D"> D. They have no mass</label>
-</div>
+<section id="calculus">
 
-<!-- 9 -->
-<div class="question" id="q9">
-<h3>9. Which state of matter has particles packed closely in an organized arrangement?</h3>
-<label><input type="radio" name="q9" value="A"> A. Solid</label>
-<label><input type="radio" name="q9" value="B"> B. Liquid</label>
-<label><input type="radio" name="q9" value="C"> C. Gas</label>
-<label><input type="radio" name="q9" value="D"> D. Plasma only</label>
-</div>
+<div class="card">
 
-<!-- 10 -->
-<div class="question" id="q10">
-<h3>10. Which statement about particles in solids is correct?</h3>
-<label><input type="radio" name="q10" value="A"> A. They never move</label>
-<label><input type="radio" name="q10" value="B"> B. They vibrate in place</label>
-<label><input type="radio" name="q10" value="C"> C. They move freely throughout the container</label>
-<label><input type="radio" name="q10" value="D"> D. They are very far apart</label>
-</div>
+<h2>Numerical Calculus</h2>
 
-<!-- 11 -->
-<div class="question" id="q11">
-<h3>11. Which state has particles that can slide past one another?</h3>
-<label><input type="radio" name="q11" value="A"> A. Solid</label>
-<label><input type="radio" name="q11" value="B"> B. Liquid</label>
-<label><input type="radio" name="q11" value="C"> C. None</label>
-<label><input type="radio" name="q11" value="D"> D. Only solid</label>
-</div>
+<p>
+The derivative measures instantaneous change.
+The integral measures accumulated quantity.
+</p>
 
-<!-- 12 -->
-<div class="question" id="q12">
-<h3>12. Which state has particles that move freely and rapidly?</h3>
-<label><input type="radio" name="q12" value="A"> A. Solid</label>
-<label><input type="radio" name="q12" value="B"> B. Liquid</label>
-<label><input type="radio" name="q12" value="C"> C. Gas</label>
-<label><input type="radio" name="q12" value="D"> D. Ice</label>
-</div>
+<input id="calcExpr"
+value="Math.sin(x) * x">
 
-<!-- 13 -->
-<div class="question" id="q13">
-<h3>13. What generally happens to particle motion when temperature increases?</h3>
-<label><input type="radio" name="q13" value="A"> A. It increases</label>
-<label><input type="radio" name="q13" value="B"> B. It stops</label>
-<label><input type="radio" name="q13" value="C"> C. It disappears</label>
-<label><input type="radio" name="q13" value="D"> D. It always decreases</label>
-</div>
+<input id="calcX" value="2">
 
-<!-- 14 -->
-<div class="question" id="q14">
-<h3>14. What is kinetic energy?</h3>
-<label><input type="radio" name="q14" value="A"> A. Energy of position</label>
-<label><input type="radio" name="q14" value="B"> B. Energy of motion</label>
-<label><input type="radio" name="q14" value="C"> C. Energy stored in chemicals only</label>
-<label><input type="radio" name="q14" value="D"> D. Energy of color</label>
-</div>
-
-<!-- 15 -->
-<div class="question" id="q15">
-<h3>15. Which particles generally have the greatest freedom of movement?</h3>
-<label><input type="radio" name="q15" value="A"> A. Solid particles</label>
-<label><input type="radio" name="q15" value="B"> B. Liquid particles</label>
-<label><input type="radio" name="q15" value="C"> C. Gas particles</label>
-<label><input type="radio" name="q15" value="D"> D. All are identical</label>
-</div>
-
-<!-- 16 -->
-<div class="question" id="q16">
-<h3>16. Which tool measures temperature?</h3>
-<label><input type="radio" name="q16" value="A"> A. Balance</label>
-<label><input type="radio" name="q16" value="B"> B. Thermometer</label>
-<label><input type="radio" name="q16" value="C"> C. Ruler</label>
-<label><input type="radio" name="q16" value="D"> D. Stopwatch</label>
-</div>
-
-<!-- 17 -->
-<div class="question" id="q17">
-<h3>17. Which tool is commonly used to measure mass?</h3>
-<label><input type="radio" name="q17" value="A"> A. Balance</label>
-<label><input type="radio" name="q17" value="B"> B. Thermometer</label>
-<label><input type="radio" name="q17" value="C"> C. Ruler</label>
-<label><input type="radio" name="q17" value="D"> D. Graduated cylinder</label>
-</div>
-
-<!-- 18 -->
-<div class="question" id="q18">
-<h3>18. Which instrument measures the volume of a liquid?</h3>
-<label><input type="radio" name="q18" value="A"> A. Balance</label>
-<label><input type="radio" name="q18" value="B"> B. Stopwatch</label>
-<label><input type="radio" name="q18" value="C"> C. Graduated cylinder</label>
-<label><input type="radio" name="q18" value="D"> D. Thermometer</label>
-</div>
-
-<!-- 19 -->
-<div class="question" id="q19">
-<h3>19. Which tool is used to measure length?</h3>
-<label><input type="radio" name="q19" value="A"> A. Ruler</label>
-<label><input type="radio" name="q19" value="B"> B. Balance</label>
-<label><input type="radio" name="q19" value="C"> C. Thermometer</label>
-<label><input type="radio" name="q19" value="D"> D. Stopwatch</label>
-</div>
-
-<!-- 20 -->
-<div class="question" id="q20">
-<h3>20. Which instrument measures time?</h3>
-<label><input type="radio" name="q20" value="A"> A. Ruler</label>
-<label><input type="radio" name="q20" value="B"> B. Balance</label>
-<label><input type="radio" name="q20" value="C"> C. Stopwatch</label>
-<label><input type="radio" name="q20" value="D"> D. Graduated cylinder</label>
-</div>
-
-<!-- 21 -->
-<div class="question" id="q21">
-<h3>21. Which is a unit of length?</h3>
-<label><input type="radio" name="q21" value="A"> A. Gram</label>
-<label><input type="radio" name="q21" value="B"> B. Meter</label>
-<label><input type="radio" name="q21" value="C"> C. Liter</label>
-<label><input type="radio" name="q21" value="D"> D. Celsius</label>
-</div>
-
-<!-- 22 -->
-<div class="question" id="q22">
-<h3>22. Which is a unit of mass?</h3>
-<label><input type="radio" name="q22" value="A"> A. Gram</label>
-<label><input type="radio" name="q22" value="B"> B. Liter</label>
-<label><input type="radio" name="q22" value="C"> C. Meter</label>
-<label><input type="radio" name="q22" value="D"> D. Celsius</label>
-</div>
-
-<!-- 23 -->
-<div class="question" id="q23">
-<h3>23. Which is a unit of volume?</h3>
-<label><input type="radio" name="q23" value="A"> A. Kilogram</label>
-<label><input type="radio" name="q23" value="B"> B. Meter</label>
-<label><input type="radio" name="q23" value="C"> C. Liter</label>
-<label><input type="radio" name="q23" value="D"> D. Second</label>
-</div>
-
-<!-- 24 -->
-<div class="question" id="q24">
-<h3>24. Mass refers to:</h3>
-<label><input type="radio" name="q24" value="A"> A. The amount of space occupied</label>
-<label><input type="radio" name="q24" value="B"> B. The amount of matter</label>
-<label><input type="radio" name="q24" value="C"> C. Temperature</label>
-<label><input type="radio" name="q24" value="D"> D. Speed</label>
-</div>
-
-<!-- 25 -->
-<div class="question" id="q25">
-<h3>25. Volume refers to:</h3>
-<label><input type="radio" name="q25" value="A"> A. Amount of space occupied</label>
-<label><input type="radio" name="q25" value="B"> B. Amount of matter</label>
-<label><input type="radio" name="q25" value="C"> C. Temperature</label>
-<label><input type="radio" name="q25" value="D"> D. Force</label>
-</div>
-
-<!-- 26 -->
-<div class="question" id="q26">
-<h3>26. What is a solution?</h3>
-<label><input type="radio" name="q26" value="A"> A. A pure solid</label>
-<label><input type="radio" name="q26" value="B"> B. A homogeneous mixture</label>
-<label><input type="radio" name="q26" value="C"> C. A gas only</label>
-<label><input type="radio" name="q26" value="D"> D. A chemical element only</label>
-</div>
-
-<!-- 27 -->
-<div class="question" id="q27">
-<h3>27. What is the solute?</h3>
-<label><input type="radio" name="q27" value="A"> A. The substance being dissolved</label>
-<label><input type="radio" name="q27" value="B"> B. The container</label>
-<label><input type="radio" name="q27" value="C"> C. The measuring tool</label>
-<label><input type="radio" name="q27" value="D"> D. The temperature</label>
-</div>
-
-<!-- 28 -->
-<div class="question" id="q28">
-<h3>28. What is the solvent?</h3>
-<label><input type="radio" name="q28" value="A"> A. The substance being dissolved</label>
-<label><input type="radio" name="q28" value="B"> B. The substance that dissolves the solute</label>
-<label><input type="radio" name="q28" value="C"> C. The solid particles only</label>
-<label><input type="radio" name="q28" value="D"> D. The container</label>
-</div>
-
-<!-- 29 -->
-<div class="question" id="q29">
-<h3>29. In saltwater, what is the solute?</h3>
-<label><input type="radio" name="q29" value="A"> A. Water</label>
-<label><input type="radio" name="q29" value="B"> B. Salt</label>
-<label><input type="radio" name="q29" value="C"> C. Glass</label>
-<label><input type="radio" name="q29" value="D"> D. Air</label>
-</div>
-
-<!-- 30 -->
-<div class="question" id="q30">
-<h3>30. In saltwater, what is the solvent?</h3>
-<label><input type="radio" name="q30" value="A"> A. Salt</label>
-<label><input type="radio" name="q30" value="B"> B. Water</label>
-<label><input type="radio" name="q30" value="C"> C. Sodium</label>
-<label><input type="radio" name="q30" value="D"> D. Glass</label>
-</div>
-
-<!-- 31 -->
-<div class="question" id="q31">
-<h3>31. A homogeneous mixture has:</h3>
-<label><input type="radio" name="q31" value="A"> A. Uniform composition</label>
-<label><input type="radio" name="q31" value="B"> B. Only solids</label>
-<label><input type="radio" name="q31" value="C"> C. Visible layers in every case</label>
-<label><input type="radio" name="q31" value="D"> D. No particles</label>
-</div>
-
-<!-- 32 -->
-<div class="question" id="q32">
-<h3>32. What does concentration describe?</h3>
-<label><input type="radio" name="q32" value="A"> A. The color of a solution</label>
-<label><input type="radio" name="q32" value="B"> B. The amount of solute relative to a given amount of solution</label>
-<label><input type="radio" name="q32" value="C"> C. The temperature only</label>
-<label><input type="radio" name="q32" value="D"> D. The mass of the container only</label>
-</div>
-
-<!-- 33 -->
-<div class="question" id="q33">
-<h3>33. Which solution is more concentrated?</h3>
-<label><input type="radio" name="q33" value="A"> A. 5 g solute in 100 mL solution</label>
-<label><input type="radio" name="q33" value="B"> B. 20 g solute in 100 mL solution</label>
-<label><input type="radio" name="q33" value="C"> C. Both are always equal</label>
-<label><input type="radio" name="q33" value="D"> D. Neither is a solution</label>
-</div>
-
-<!-- 34 -->
-<div class="question" id="q34">
-<h3>34. A dilute solution contains:</h3>
-<label><input type="radio" name="q34" value="A"> A. Relatively little solute</label>
-<label><input type="radio" name="q34" value="B"> B. No solvent</label>
-<label><input type="radio" name="q34" value="C"> C. Only solid</label>
-<label><input type="radio" name="q34" value="D"> D. Maximum possible solute</label>
-</div>
-
-<!-- 35 -->
-<div class="question" id="q35">
-<h3>35. A concentrated solution contains:</h3>
-<label><input type="radio" name="q35" value="A"> A. Relatively large amount of solute</label>
-<label><input type="radio" name="q35" value="B"> B. No solute</label>
-<label><input type="radio" name="q35" value="C"> C. No solvent</label>
-<label><input type="radio" name="q35" value="D"> D. No particles</label>
-</div>
-
-<!-- 36 -->
-<div class="question" id="q36">
-<h3>36. Which formula calculates mass/volume percent?</h3>
-<label><input type="radio" name="q36" value="A"> A. Volume ÷ mass × 100</label>
-<label><input type="radio" name="q36" value="B"> B. Mass ÷ volume × 100</label>
-<label><input type="radio" name="q36" value="C"> C. Mass × volume</label>
-<label><input type="radio" name="q36" value="D"> D. Mass + volume</label>
-</div>
-
-<!-- 37 -->
-<div class="question" id="q37">
-<h3>37. What is the mass/volume percent of 10 g solute in 100 mL solution?</h3>
-<label><input type="radio" name="q37" value="A"> A. 1%</label>
-<label><input type="radio" name="q37" value="B"> B. 5%</label>
-<label><input type="radio" name="q37" value="C"> C. 10%</label>
-<label><input type="radio" name="q37" value="D"> D. 100%</label>
-</div>
-
-<!-- 38 -->
-<div class="question" id="q38">
-<h3>38. What is the mass/volume percent of 20 g solute in 200 mL solution?</h3>
-<label><input type="radio" name="q38" value="A"> A. 5%</label>
-<label><input type="radio" name="q38" value="B"> B. 10%</label>
-<label><input type="radio" name="q38" value="C"> C. 20%</label>
-<label><input type="radio" name="q38" value="D"> D. 40%</label>
-</div>
-
-<!-- 39 -->
-<div class="question" id="q39">
-<h3>39. What is the mass/volume percent of 15 g solute in 300 mL solution?</h3>
-<label><input type="radio" name="q39" value="A"> A. 3%</label>
-<label><input type="radio" name="q39" value="B"> B. 5%</label>
-<label><input type="radio" name="q39" value="C"> C. 15%</label>
-<label><input type="radio" name="q39" value="D"> D. 20%</label>
-</div>
-
-<!-- 40 -->
-<div class="question" id="q40">
-<h3>40. If the amount of solute increases while the solution volume stays the same, concentration generally:</h3>
-<label><input type="radio" name="q40" value="A"> A. Decreases</label>
-<label><input type="radio" name="q40" value="B"> B. Increases</label>
-<label><input type="radio" name="q40" value="C"> C. Becomes zero</label>
-<label><input type="radio" name="q40" value="D"> D. Does not exist</label>
-</div>
-
-<!-- 41 -->
-<div class="question" id="q41">
-<h3>41. Which is a physical property?</h3>
-<label><input type="radio" name="q41" value="A"> A. Flammability</label>
-<label><input type="radio" name="q41" value="B"> B. Color</label>
-<label><input type="radio" name="q41" value="C"> C. Reactivity</label>
-<label><input type="radio" name="q41" value="D"> D. Ability to rust</label>
-</div>
-
-<!-- 42 -->
-<div class="question" id="q42">
-<h3>42. Which is a chemical property?</h3>
-<label><input type="radio" name="q42" value="A"> A. Color</label>
-<label><input type="radio" name="q42" value="B"> B. Mass</label>
-<label><input type="radio" name="q42" value="C"> C. Flammability</label>
-<label><input type="radio" name="q42" value="D"> D. Volume</label>
-</div>
-
-<!-- 43 -->
-<div class="question" id="q43">
-<h3>43. Which property can be observed without changing a substance into a new substance?</h3>
-<label><input type="radio" name="q43" value="A"> A. Physical property</label>
-<label><input type="radio" name="q43" value="B"> B. Chemical property</label>
-<label><input type="radio" name="q43" value="C"> C. Chemical reaction</label>
-<label><input type="radio" name="q43" value="D"> D. Reactivity</label>
-</div>
-
-<!-- 44 -->
-<div class="question" id="q44">
-<h3>44. Which is NOT a physical property?</h3>
-<label><input type="radio" name="q44" value="A"> A. Melting point</label>
-<label><input type="radio" name="q44" value="B"> B. Density</label>
-<label><input type="radio" name="q44" value="C"> C. Flammability</label>
-<label><input type="radio" name="q44" value="D"> D. Color</label>
-</div>
-
-<!-- 45 -->
-<div class="question" id="q45">
-<h3>45. Which property describes how easily a substance burns?</h3>
-<label><input type="radio" name="q45" value="A"> A. Density</label>
-<label><input type="radio" name="q45" value="B"> B. Flammability</label>
-<label><input type="radio" name="q45" value="C"> C. Volume</label>
-<label><input type="radio" name="q45" value="D"> D. Mass</label>
-</div>
-
-<!-- 46 -->
-<div class="question" id="q46">
-<h3>46. Which is an example of a physical property?</h3>
-<label><input type="radio" name="q46" value="A"> A. Boiling point</label>
-<label><input type="radio" name="q46" value="B"> B. Reactivity with acid</label>
-<label><input type="radio" name="q46" value="C"> C. Flammability</label>
-<label><input type="radio" name="q46" value="D"> D. Ability to rust</label>
-</div>
-
-<!-- 47 -->
-<div class="question" id="q47">
-<h3>47. Which statement correctly compares physical and chemical properties?</h3>
-<label><input type="radio" name="q47" value="A"> A. Both always create new substances</label>
-<label><input type="radio" name="q47" value="B"> B. Physical properties can be observed without changing the substance's identity</label>
-<label><input type="radio" name="q47" value="C"> C. Chemical properties are always measurements of mass</label>
-<label><input type="radio" name="q47" value="D"> D. Physical properties only apply to liquids</label>
-</div>
-
-<!-- 48 -->
-<div class="question" id="q48">
-<h3>48. Density is considered a:</h3>
-<label><input type="radio" name="q48" value="A"> A. Physical property</label>
-<label><input type="radio" name="q48" value="B"> B. Chemical property</label>
-<label><input type="radio" name="q48" value="C"> C. Chemical reaction</label>
-<label><input type="radio" name="q48" value="D"> D. Solution</label>
-</div>
-
-<!-- 49 -->
-<div class="question" id="q49">
-<h3>49. Which combination is correct?</h3>
-<label><input type="radio" name="q49" value="A"> A. Solute = dissolves; solvent = gets dissolved</label>
-<label><input type="radio" name="q49" value="B"> B. Solute = gets dissolved; solvent = dissolves solute</label>
-<label><input type="radio" name="q49" value="C"> C. Solute = thermometer; solvent = balance</label>
-<label><input type="radio" name="q49" value="D"> D. Solute and solvent are always solids</label>
-</div>
-
-<!-- 50 -->
-<div class="question" id="q50">
-<h3>50. Which statement is correct about matter?</h3>
-<label><input type="radio" name="q50" value="A"> A. Matter has no properties</label>
-<label><input type="radio" name="q50" value="B"> B. Matter is made of particles</label>
-<label><input type="radio" name="q50" value="C"> C. Only solids contain particles</label>
-<label><input type="radio" name="q50" value="D"> D. Particles never move</label>
-</div>
-
-<button type="button" class="submit" onclick="gradeTest()">
-    SUBMIT TEST
+<button onclick="calculusCalculate()">
+Differentiate + Integrate
 </button>
 
-</form>
-
-<div id="result"></div>
+<div id="calcOut" class="output"></div>
 
 </div>
+
+</section>
+
+
+<section id="ode">
+
+<div class="card">
+
+<h2>Differential Equation Solver</h2>
+
+<p>
+Numerically solve equations of the form
+</p>
+
+<p class="math">
+dy/dt = f(t,y)
+</p>
+
+<input id="odeExpr"
+value="-0.5*y">
+
+<input id="odeY" value="10">
+
+<input id="odeStep" value="0.01">
+
+<button onclick="solveODE()">
+Run Euler Solver
+</button>
+
+<div id="odeOut" class="output"></div>
+
+</div>
+
+</section>
+
+
+<section id="optimization">
+
+<div class="card">
+
+<h2>Gradient Descent</h2>
+
+<p>
+Optimization searches for values minimizing or maximizing
+a mathematical objective.
+</p>
+
+<p class="math">
+xₙ₊₁ = xₙ − α∇f(xₙ)
+</p>
+
+<input id="optX" value="10">
+
+<input id="optLR" value="0.1">
+
+<button onclick="optimize()">
+Optimize
+</button>
+
+<div id="optOut" class="output"></div>
+
+</div>
+
+</section>
+
+
+<section id="graph">
+
+<div class="card">
+
+<h2>Graph Theory</h2>
+
+<p>
+A graph consists of vertices and edges.
+It can represent roads, networks, dependencies,
+game maps and communication systems.
+</p>
+
+<textarea id="graphInput">
+A B 4
+A C 2
+C B 1
+B D 5
+C D 8
+</textarea>
+
+<button onclick="runGraph()">
+Dijkstra
+</button>
+
+<div id="graphOut" class="output"></div>
+
+</div>
+
+</section>
+
+
+<section id="information">
+
+<div class="card">
+
+<h2>Information Theory</h2>
+
+<p>
+Shannon entropy measures the uncertainty of a probability
+distribution.
+</p>
+
+<p class="math">
+H(X) = −Σ p(x) log₂ p(x)
+</p>
+
+<input id="probInput"
+value="0.5,0.25,0.125,0.125">
+
+<button onclick="entropyCalculate()">
+Calculate Entropy
+</button>
+
+<div id="entropyOut" class="output"></div>
+
+</div>
+
+</section>
+
+
+<section id="crypto">
+
+<div class="card">
+
+<h2>Modular Cryptography</h2>
+
+<p>
+Modular arithmetic forms the mathematical foundation
+of many cryptographic constructions.
+</p>
+
+<input id="modA" value="7">
+<input id="modB" value="13">
+<input id="modP" value="17">
+
+<button onclick="cryptoCalculate()">
+Calculate
+</button>
+
+<div id="cryptoOut" class="output"></div>
+
+</div>
+
+</section>
+
+
+<section id="elliptic">
+
+<div class="card">
+
+<h2>Elliptic Curve</h2>
+
+<p class="math">
+y² = x³ + ax + b mod p
+</p>
+
+<input id="ecA" value="2">
+<input id="ecB" value="3">
+<input id="ecP" value="97">
+
+<button onclick="findCurvePoints()">
+Generate Curve Points
+</button>
+
+<div id="ecOut" class="output"></div>
+
+</div>
+
+</section>
+
+
+<section id="fractal">
+
+<div class="card">
+
+<h2>Mandelbrot Set</h2>
+
+<p>
+The Mandelbrot set is generated by repeatedly applying
+</p>
+
+<p class="math">
+zₙ₊₁ = zₙ² + c
+</p>
+
+<p>
+It is an example of complex dynamics and fractal geometry.
+</p>
+
+<button onclick="drawMandelbrot()">
+Generate
+</button>
+
+<canvas id="fractalCanvas"
+width="900"
+height="600"></canvas>
+
+</div>
+
+</section>
+
+</main>
+
 
 <script>
 
-const answers = {
-    q1:"B",
-    q2:"A",
-    q3:"B",
-    q4:"B",
-    q5:"B",
-    q6:"B",
-    q7:"B",
-    q8:"A",
-    q9:"A",
-    q10:"B",
+function show(id) {
 
-    q11:"B",
-    q12:"C",
-    q13:"A",
-    q14:"B",
-    q15:"C",
-    q16:"B",
-    q17:"A",
-    q18:"C",
-    q19:"A",
-    q20:"C",
-
-    q21:"B",
-    q22:"A",
-    q23:"C",
-    q24:"B",
-    q25:"A",
-    q26:"B",
-    q27:"A",
-    q28:"B",
-    q29:"B",
-    q30:"B",
-
-    q31:"A",
-    q32:"B",
-    q33:"B",
-    q34:"A",
-    q35:"A",
-    q36:"B",
-    q37:"C",
-    q38:"B",
-    q39:"B",
-    q40:"B",
-
-    q41:"B",
-    q42:"C",
-    q43:"A",
-    q44:"C",
-    q45:"B",
-    q46:"A",
-    q47:"B",
-    q48:"A",
-    q49:"B",
-    q50:"B"
-};
-
-function gradeTest() {
-
-    let score = 0;
-    let unanswered = 0;
-
-    for (let i = 1; i <= 50; i++) {
-
-        const question = document.getElementById("q" + i);
-        const selected = document.querySelector(
-            'input[name="q' + i + '"]:checked'
+    document
+        .querySelectorAll("section")
+        .forEach(x =>
+            x.classList.remove("active")
         );
 
-        question.classList.remove("correct", "wrong", "unanswered");
+    document
+        .getElementById(id)
+        .classList.add("active");
+}
 
-        if (!selected) {
-            unanswered++;
-            question.classList.add("unanswered");
-            continue;
-        }
 
-        if (selected.value === answers["q" + i]) {
-            score++;
-            question.classList.add("correct");
-        } else {
-            question.classList.add("wrong");
+/* FINITE FIELD */
+
+function finiteField() {
+
+    const p =
+        Number(document.getElementById("fp").value);
+
+    const a =
+        Number(document.getElementById("fa").value);
+
+    const b =
+        Number(document.getElementById("fb").value);
+
+    const add =
+        (a + b) % p;
+
+    const sub =
+        ((a - b) % p + p) % p;
+
+    const mul =
+        (a * b) % p;
+
+    let inverse = "undefined";
+
+    for(let i = 1; i < p; i++) {
+
+        if((a * i) % p === 1) {
+
+            inverse = i;
+            break;
         }
     }
 
-    let percentage = (score / 50) * 100;
+    document.getElementById(
+        "fieldOut"
+    ).textContent =
+`GF(${p})
 
-    let message = "";
+a + b = ${add}
+a - b = ${sub}
+a × b = ${mul}
+a⁻¹ = ${inverse}`;
 
-    if (score >= 45) {
-        message = "Excellent";
-    } else if (score >= 40) {
-        message = "Very Good";
-    } else if (score >= 35) {
-        message = "Good";
-    } else if (score >= 30) {
-        message = "Needs Review";
-    } else {
-        message = "Study the reviewer and try again";
+}
+
+
+/* MATRIX */
+
+function parseMatrix(text) {
+
+    return text.trim()
+        .split("\n")
+        .map(row =>
+            row.trim()
+                .split(/\s+/)
+                .map(Number)
+        );
+}
+
+
+function matrixCalculate() {
+
+    const A =
+        parseMatrix(
+            document.getElementById(
+                "matrixInput"
+            ).value
+        );
+
+    const rows = A.length;
+    const cols = A[0].length;
+
+    let norm = 0;
+
+    for(const row of A)
+        for(const x of row)
+            norm += x*x;
+
+    norm = Math.sqrt(norm);
+
+    document.getElementById(
+        "matrixOut"
+    ).textContent =
+`Dimensions: ${rows} × ${cols}
+
+Frobenius norm:
+${norm}
+
+Trace:
+${
+    rows === cols
+    ? A.reduce(
+        (s,row,i) =>
+        s + row[i],
+        0
+    )
+    : "Only defined for square matrices"
+}`;
+
+}
+
+
+/* COMPLEX NUMBERS */
+
+function complexCalculate() {
+
+    const a =
+        Number(document.getElementById("cr").value);
+
+    const b =
+        Number(document.getElementById("ci").value);
+
+    const magnitude =
+        Math.sqrt(a*a + b*b);
+
+    const argument =
+        Math.atan2(b,a);
+
+    document.getElementById(
+        "complexOut"
+    ).textContent =
+`z = ${a} + ${b}i
+
+|z| = ${magnitude}
+arg(z) = ${argument} radians
+
+Euler representation:
+
+z = ${magnitude} × e^(i ${argument})`;
+
+}
+
+
+/* CALCULUS */
+
+function calculusCalculate() {
+
+    const expression =
+        document.getElementById(
+            "calcExpr"
+        ).value;
+
+    const x =
+        Number(
+            document.getElementById(
+                "calcX"
+            ).value
+        );
+
+    const f = Function(
+        "x",
+        "return " + expression
+    );
+
+    const h = 0.000001;
+
+    const derivative =
+        (
+            f(x+h) -
+            f(x-h)
+        ) / (2*h);
+
+    let integral = 0;
+
+    const a = 0;
+    const b = x;
+    const n = 10000;
+
+    const dx =
+        (b-a)/n;
+
+    for(let i=0;i<n;i++) {
+
+        const x1 =
+            a + i*dx;
+
+        const x2 =
+            x1 + dx;
+
+        integral +=
+            (f(x1)+f(x2))
+            * dx / 2;
     }
 
-    const result = document.getElementById("result");
+    document.getElementById(
+        "calcOut"
+    ).textContent =
+`f(x) = ${expression}
 
-    result.style.display = "block";
+x = ${x}
 
-    result.innerHTML = `
-        <div class="score">${score} / 50</div>
-        <p>Percentage: ${percentage}%</p>
-        <p>${message}</p>
-        <p>Unanswered: ${unanswered}</p>
-        <p class="answer">
-            Green = correct<br>
-            Red = incorrect<br>
-            Yellow = unanswered
-        </p>
-    `;
+Numerical derivative:
+${derivative}
 
-    window.scrollTo({
-        top: document.body.scrollHeight,
-        behavior: "smooth"
-    });
+Numerical integral from 0 to ${x}:
+${integral}`;
+
+}
+
+
+/* DIFFERENTIAL EQUATION */
+
+function solveODE() {
+
+    const expression =
+        document.getElementById(
+            "odeExpr"
+        ).value;
+
+    let y =
+        Number(
+            document.getElementById(
+                "odeY"
+            ).value
+        );
+
+    const dt =
+        Number(
+            document.getElementById(
+                "odeStep"
+            ).value
+        );
+
+    const f =
+        Function(
+            "t",
+            "y",
+            "return " + expression
+        );
+
+    let t = 0;
+
+    for(
+        let i=0;
+        i<1000;
+        i++
+    ) {
+
+        y +=
+            dt *
+            f(t,y);
+
+        t += dt;
+    }
+
+    document.getElementById(
+        "odeOut"
+    ).textContent =
+`Equation:
+
+dy/dt = ${expression}
+
+Initial condition:
+y(0) = ${
+        document.getElementById(
+            "odeY"
+        ).value
+    }
+
+Final t:
+${t}
+
+Numerical solution:
+${y}`;
+
+}
+
+
+/* OPTIMIZATION */
+
+function optimize() {
+
+    let x =
+        Number(
+            document.getElementById(
+                "optX"
+            ).value
+        );
+
+    const lr =
+        Number(
+            document.getElementById(
+                "optLR"
+            ).value
+        );
+
+    /*
+       Objective:
+       f(x) = x²
+
+       Gradient:
+       f'(x) = 2x
+    */
+
+    for(
+        let i=0;
+        i<1000;
+        i++
+    ) {
+
+        const gradient = 2*x;
+
+        x -= lr * gradient;
+    }
+
+    document.getElementById(
+        "optOut"
+    ).textContent =
+`Objective:
+
+f(x) = x²
+
+Minimum found near:
+
+x = ${x}
+
+f(x) = ${x*x}`;
+
+}
+
+
+/* GRAPH THEORY */
+
+function runGraph() {
+
+    const lines =
+        document.getElementById(
+            "graphInput"
+        ).value
+        .trim()
+        .split("\n");
+
+    const graph = {};
+
+    for(const line of lines) {
+
+        const [
+            a,b,w
+        ] = line.trim().split(/\s+/);
+
+        if(!graph[a])
+            graph[a] = [];
+
+        graph[a].push({
+            node:b,
+            weight:Number(w)
+        });
+    }
+
+    const start =
+        Object.keys(graph)[0];
+
+    const distance = {};
+
+    for(const node in graph)
+        distance[node] = Infinity;
+
+    distance[start] = 0;
+
+    const visited = new Set();
+
+    while(true) {
+
+        let current = null;
+        let best = Infinity;
+
+        for(const node in distance) {
+
+            if(
+                !visited.has(node) &&
+                distance[node] < best
+            ) {
+
+                best =
+                    distance[node];
+
+                current = node;
+            }
+        }
+
+        if(current === null)
+            break;
+
+        visited.add(current);
+
+        for(
+            const edge
+            of graph[current] || []
+        ) {
+
+            const candidate =
+                distance[current] +
+                edge.weight;
+
+            if(
+                candidate <
+                distance[edge.node]
+            ) {
+
+                distance[edge.node] =
+                    candidate;
+            }
+        }
+    }
+
+    document.getElementById(
+        "graphOut"
+    ).textContent =
+JSON.stringify(
+    distance,
+    null,
+    2
+);
+
+}
+
+
+/* INFORMATION THEORY */
+
+function entropyCalculate() {
+
+    const p =
+        document.getElementById(
+            "probInput"
+        ).value
+        .split(",")
+        .map(Number);
+
+    let H = 0;
+
+    for(const x of p) {
+
+        if(x > 0)
+            H -=
+                x *
+                Math.log2(x);
+    }
+
+    document.getElementById(
+        "entropyOut"
+    ).textContent =
+`Distribution:
+
+${p.join(", ")}
+
+Shannon entropy:
+
+H(X) = ${H} bits`;
+
+}
+
+
+/* MODULAR CRYPTOGRAPHY */
+
+function cryptoCalculate() {
+
+    const a =
+        Number(
+            document.getElementById(
+                "modA"
+            ).value
+        );
+
+    const b =
+        Number(
+            document.getElementById(
+                "modB"
+            ).value
+        );
+
+    const p =
+        Number(
+            document.getElementById(
+                "modP"
+            ).value
+        );
+
+    let inverse = null;
+
+    for(
+        let i=1;
+        i<p;
+        i++
+    ) {
+
+        if(
+            (a*i)%p === 1
+        ) {
+
+            inverse = i;
+            break;
+        }
+    }
+
+    document.getElementById(
+        "cryptoOut"
+    ).textContent =
+`Modulo ${p}
+
+a + b = ${(a+b)%p}
+a × b = ${(a*b)%p}
+a^b = ${powMod(a,b,p)}
+inverse(a) = ${inverse}`;
+
+}
+
+
+function powMod(a,b,m) {
+
+    let result = 1;
+
+    a %= m;
+
+    while(b > 0) {
+
+        if(b & 1)
+            result =
+                result*a%m;
+
+        a =
+            a*a%m;
+
+        b >>= 1;
+    }
+
+    return result;
+}
+
+
+/* ELLIPTIC CURVE */
+
+function findCurvePoints() {
+
+    const a =
+        Number(
+            document.getElementById(
+                "ecA"
+            ).value
+        );
+
+    const b =
+        Number(
+            document.getElementById(
+                "ecB"
+            ).value
+        );
+
+    const p =
+        Number(
+            document.getElementById(
+                "ecP"
+            ).value
+        );
+
+    const points = [];
+
+    for(
+        let x=0;
+        x<p;
+        x++
+    ) {
+
+        const rhs =
+            (
+                x*x*x +
+                a*x +
+                b
+            ) % p;
+
+        for(
+            let y=0;
+            y<p;
+            y++
+        ) {
+
+            if(
+                (y*y)%p === rhs
+            ) {
+
+                points.push(
+                    `(${x},${y})`
+                );
+            }
+        }
+    }
+
+    document.getElementById(
+        "ecOut"
+    ).textContent =
+`Curve:
+
+y² = x³ + ${a}x + ${b} mod ${p}
+
+Points:
+
+${points.join(" ")}
+
+Number of finite points:
+${points.length} + 1`;
+
+}
+
+
+/* MANDELBROT */
+
+function drawMandelbrot() {
+
+    const canvas =
+        document.getElementById(
+            "fractalCanvas"
+        );
+
+    const ctx =
+        canvas.getContext("2d");
+
+    const width =
+        canvas.width;
+
+    const height =
+        canvas.height;
+
+    const image =
+        ctx.createImageData(
+            width,
+            height
+        );
+
+    const maxIterations = 100;
+
+    for(
+        let py=0;
+        py<height;
+        py++
+    ) {
+
+        for(
+            let px=0;
+            px<width;
+            px++
+        ) {
+
+            const cx =
+                px/width*3.5 - 2.5;
+
+            const cy =
+                py/height*2.5 - 1.25;
+
+            let x=0;
+            let y=0;
+            let iteration=0;
+
+            while(
+                x*x+y*y <= 4 &&
+                iteration < maxIterations
+            ) {
+
+                const xt =
+                    x*x-y*y+cx;
+
+                y =
+                    2*x*y+cy;
+
+                x=xt;
+
+                iteration++;
+            }
+
+            const index =
+                4*(py*width+px);
+
+            const value =
+                iteration === maxIterations
+                ? 0
+                : 255 -
+                  iteration*2;
+
+            image.data[index] =
+                value;
+
+            image.data[index+1] =
+                value;
+
+            image.data[index+2] =
+                value;
+
+            image.data[index+3] =
+                255;
+        }
+    }
+
+    ctx.putImageData(
+        image,
+        0,
+        0
+    );
 }
 
 </script>
