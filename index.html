@@ -2,25 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-
-<meta name="viewport"
-content="width=device-width,
-initial-scale=1,
-maximum-scale=1,
-user-scalable=no">
-
-<title>Mathematical World Engine v2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Advanced Mathematical World</title>
 
 <style>
-
-html,
-body{
+html,body{
     margin:0;
     width:100%;
     height:100%;
     overflow:hidden;
-    background:#05080c;
-    font-family:monospace;
+    background:#000;
+    touch-action:none;
 }
 
 canvas{
@@ -29,1730 +21,1171 @@ canvas{
     height:100%;
     touch-action:none;
 }
-
-#hud{
-    position:fixed;
-    top:8px;
-    left:8px;
-    z-index:10;
-
-    padding:10px;
-
-    color:#dff;
-    background:rgba(0,0,0,.65);
-
-    border:1px solid #4dd;
-    border-radius:6px;
-
-    font-size:11px;
-    line-height:1.5;
-
-    pointer-events:none;
-}
-
-#title{
-    font-size:14px;
-    font-weight:bold;
-    margin-bottom:4px;
-}
-
-#error{
-    display:none;
-
-    position:fixed;
-    inset:0;
-    z-index:100;
-
-    padding:20px;
-
-    background:#090000;
-    color:#ff7070;
-
-    font-family:monospace;
-    white-space:pre-wrap;
-}
-
-#touch{
-    position:fixed;
-    inset:0;
-    z-index:20;
-    pointer-events:none;
-}
-
-.button{
-    position:absolute;
-
-    width:58px;
-    height:58px;
-
-    border-radius:50%;
-    border:1px solid rgba(255,255,255,.35);
-
-    background:rgba(255,255,255,.08);
-
-    color:white;
-
-    font:bold 13px monospace;
-
-    pointer-events:auto;
-    touch-action:none;
-
-    user-select:none;
-    -webkit-user-select:none;
-}
-
-#forward{
-    left:76px;
-    bottom:155px;
-}
-
-#back{
-    left:76px;
-    bottom:20px;
-}
-
-#left{
-    left:10px;
-    bottom:87px;
-}
-
-#right{
-    left:142px;
-    bottom:87px;
-}
-
-#jump{
-    right:20px;
-    bottom:92px;
-
-    width:72px;
-    height:72px;
-}
-
-#sprint{
-    right:105px;
-    bottom:20px;
-}
-
-@media (min-width:900px){
-
-    #touch{
-        opacity:.35;
-    }
-
-}
-
 </style>
 </head>
 
 <body>
 
-<div id="hud">
-
-    <div id="title">
-        MATHEMATICAL WORLD ENGINE v2
-    </div>
-
-    FPS:
-    <span id="fps">0</span>
-
-    <br>
-
-    FRAME:
-    <span id="frame">0</span>
-
-    <br>
-
-    POS:
-    <span id="pos">0 0 0</span>
-
-    <br>
-
-    VEL:
-    <span id="vel">0 0 0</span>
-
-    <br>
-
-    TERRAIN:
-    <span id="terrain">0</span>
-
-    <br>
-
-    SLOPE:
-    <span id="slope">0</span>
-
-    <br>
-
-    BIOME:
-    <span id="biome">---</span>
-
-    <br>
-
-    CHUNKS:
-    <span id="chunks">0</span>
-
-    <br>
-
-    OBJECTS:
-    <span id="instances">0</span>
-
-    <br>
-
-    CACHE:
-    <span id="cache">0</span>
-
-    <br>
-
-    PATH NODES:
-    <span id="path">0</span>
-
-    <br>
-
-    SEED:
-    <span id="seed">0</span>
-
-</div>
-
-<div id="error"></div>
-
-<div id="touch">
-
-    <button class="button" id="forward">▲</button>
-
-    <button class="button" id="back">▼</button>
-
-    <button class="button" id="left">◀</button>
-
-    <button class="button" id="right">▶</button>
-
-    <button class="button" id="jump">
-        JUMP
-    </button>
-
-    <button class="button" id="sprint">
-        RUN
-    </button>
-
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 
 <script>
 
-// Check Three.js
+// ==============================
+// CORE
+// ==============================
 
 if(typeof THREE === "undefined"){
-
-    const error =
-        document.getElementById("error");
-
-    error.style.display = "block";
-
-    error.textContent =
-        "Three.js failed to load.\n\n" +
-        "Make sure your device has internet access " +
-        "and try again.";
-
-    throw new Error(
-        "Three.js failed to load"
-    );
-
+    document.body.innerHTML = "<div style='color:white;font-family:Arial;padding:20px'>Three.js failed to load. Connect to the internet and reload.</div>";
+    throw new Error("Three.js failed to load");
 }
 
+const scene = new THREE.Scene();
 
-// Engine configuration
+const camera = new THREE.PerspectiveCamera(
+    75,
+    innerWidth / innerHeight,
+    0.05,
+    5000
+);
 
-const CONFIG = {
+const renderer = new THREE.WebGLRenderer({
+    antialias:true,
+    powerPreference:"high-performance"
+});
 
-    seed:739182,
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+renderer.setSize(innerWidth,innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    chunkSize:64,
-
-    terrainResolution:16,
-
-    renderRadius:3,
-
-    gravity:-24,
-
-    walkSpeed:9,
-
-    sprintSpeed:15,
-
-    acceleration:38,
-
-    jumpVelocity:10,
-
-    playerHeight:1.8,
-
-    cacheSize:50000,
-
-    fixedStep:1/120
-
-};
+document.body.appendChild(renderer.domElement);
 
 
-// Numerical cache
+// ==============================
+// MATHEMATICAL TERRAIN
+// ==============================
 
-class HeightCache{
+const CHUNK_SIZE = 100;
+const TERRAIN_SEGMENTS = 32;
+const VIEW_DISTANCE = 2;
 
-    constructor(limit){
-
-        this.limit=limit;
-
-        this.map=new Map();
-
-    }
-
-    key(x,z){
-
-        return x+"|"+z;
-
-    }
-
-    get(x,z){
-
-        return this.map.get(
-            this.key(x,z)
-        );
-
-    }
-
-    set(x,z,value){
-
-        const key=
-            this.key(x,z);
-
-        this.map.set(
-            key,
-            value
-        );
-
-        if(
-            this.map.size >
-            this.limit
-        ){
-
-            const first=
-                this.map.keys()
-                .next()
-                .value;
-
-            this.map.delete(
-                first
-            );
-
-        }
-
-    }
-
-    size(){
-
-        return this.map.size;
-
-    }
-
-}
-
-
-const heightCache=
-    new HeightCache(
-        CONFIG.cacheSize
-    );
-
-
-// Fast deterministic hash
+const chunkMap = new Map();
+const terrainCache = new Map();
 
 function hash(x,z){
 
-    const value=
-        Math.sin(
-            x*127.1+
-            z*311.7+
-            CONFIG.seed*.001
-        )*
-        43758.5453123;
+    let n = Math.sin(
+        x * 127.1 +
+        z * 311.7
+    ) * 43758.5453123;
 
-    return value-
-        Math.floor(value);
-
+    return n - Math.floor(n);
 }
-
-
-// Smooth interpolation
 
 function smooth(t){
-
-    return t*t*(3-2*t);
-
+    return t * t * (3 - 2 * t);
 }
-
-
-// Value noise
 
 function noise(x,z){
 
-    const x0=
-        Math.floor(x);
+    const x0 = Math.floor(x);
+    const z0 = Math.floor(z);
 
-    const z0=
-        Math.floor(z);
+    const x1 = x0 + 1;
+    const z1 = z0 + 1;
 
-    const x1=
-        x0+1;
+    const sx = smooth(x - x0);
+    const sz = smooth(z - z0);
 
-    const z1=
-        z0+1;
+    const n00 = hash(x0,z0);
+    const n10 = hash(x1,z0);
+    const n01 = hash(x0,z1);
+    const n11 = hash(x1,z1);
 
-    const sx=
-        smooth(x-x0);
+    const ix0 = THREE.MathUtils.lerp(n00,n10,sx);
+    const ix1 = THREE.MathUtils.lerp(n01,n11,sx);
 
-    const sz=
-        smooth(z-z0);
-
-    const n00=
-        hash(x0,z0);
-
-    const n10=
-        hash(x1,z0);
-
-    const n01=
-        hash(x0,z1);
-
-    const n11=
-        hash(x1,z1);
-
-    const a=
-        n00+
-        (n10-n00)*sx;
-
-    const b=
-        n01+
-        (n11-n01)*sx;
-
-    return(
-        a+
-        (b-a)*sz
-    )*2-1;
-
+    return THREE.MathUtils.lerp(ix0,ix1,sz);
 }
-
-
-// Fractal Brownian Motion
 
 function fbm(x,z){
 
-    let value=0;
+    let value = 0;
+    let amplitude = 0.5;
+    let frequency = 1;
 
-    let amplitude=.5;
+    for(let i=0;i<6;i++){
 
-    let frequency=1;
+        value += noise(
+            x * frequency,
+            z * frequency
+        ) * amplitude;
 
-    for(
-        let i=0;
-        i<6;
-        i++
-    ){
-
-        value+=
-            noise(
-                x*frequency,
-                z*frequency
-            )*
-            amplitude;
-
-        frequency*=2;
-
-        amplitude*=.5;
-
+        frequency *= 2;
+        amplitude *= 0.5;
     }
 
     return value;
-
 }
-
-
-// Ridged multifractal
 
 function ridged(x,z){
 
-    let value=0;
+    let n = fbm(x,z);
 
-    let amplitude=.5;
+    n = 1 - Math.abs(n * 2 - 1);
 
-    let frequency=.012;
-
-    for(
-        let i=0;
-        i<6;
-        i++
-    ){
-
-        let n=
-            noise(
-                x*frequency,
-                z*frequency
-            );
-
-        n=
-            1-Math.abs(n);
-
-        n*=n;
-
-        value+=
-            n*amplitude;
-
-        frequency*=2.1;
-
-        amplitude*=.5;
-
-    }
-
-    return value;
-
+    return n * n;
 }
-
-
-// Main mathematical terrain function
 
 function rawHeight(x,z){
 
-    const continental=
-        fbm(
-            x*.004,
-            z*.004
-        )*12;
+    const continental =
+        fbm(x * 0.0025,z * 0.0025);
 
-    const hills=
-        fbm(
-            x*.018,
-            z*.018
-        )*5;
+    const mountains =
+        ridged(x * 0.008,z * 0.008);
 
-    const mountains=
-        ridged(
-            x,
-            z
-        )*28;
+    const detail =
+        fbm(x * 0.04,z * 0.04);
 
-    const waves=
-        Math.sin(x*.018)*
-        Math.cos(z*.023)*
-        1.5;
+    let h =
+        continental * 35 +
+        mountains * 32 +
+        detail * 2;
 
-    const valley=
-        -Math.abs(
-            fbm(
-                x*.009,
-                z*.009
-            )
-        )*5;
+    h -= 12;
 
-    return(
-        continental+
-        hills+
-        mountains+
-        waves+
-        valley
-    );
-
+    return h;
 }
 
 
-// Cached terrain evaluation
+// ==============================
+// EXACT TERRAIN HEIGHT CACHE
+// ==============================
 
 function terrainHeight(x,z){
 
-    const keyX=
-        Math.round(x*2)/2;
+    const gx = Math.floor(x * 2) / 2;
+    const gz = Math.floor(z * 2) / 2;
 
-    const keyZ=
-        Math.round(z*2)/2;
+    const key = gx + "," + gz;
 
-    const cached=
-        heightCache.get(
-            keyX,
-            keyZ
-        );
+    const cached = terrainCache.get(key);
 
-    if(
-        cached !== undefined
-    ){
-
+    if(cached !== undefined){
         return cached;
-
     }
 
-    const result=
-        rawHeight(
-            keyX,
-            keyZ
-        );
+    const h = rawHeight(gx,gz);
 
-    heightCache.set(
-        keyX,
-        keyZ,
-        result
-    );
+    terrainCache.set(key,h);
 
-    return result;
+    if(terrainCache.size > 50000){
+        const first = terrainCache.keys().next().value;
+        terrainCache.delete(first);
+    }
 
+    return h;
 }
-
-
-// Numerical gradient
-
-function terrainGradient(x,z){
-
-    const e=.5;
-
-    const dx=
-        (
-            terrainHeight(
-                x+e,
-                z
-            )-
-            terrainHeight(
-                x-e,
-                z
-            )
-        )/
-        (2*e);
-
-    const dz=
-        (
-            terrainHeight(
-                x,
-                z+e
-            )-
-            terrainHeight(
-                x,
-                z-e
-            )
-        )/
-        (2*e);
-
-    return{
-        x:dx,
-        z:dz
-    };
-
-}
-
-
-// Terrain slope
 
 function terrainSlope(x,z){
 
-    const gradient=
-        terrainGradient(
-            x,
-            z
-        );
+    const e = 0.5;
 
-    return Math.hypot(
-        gradient.x,
-        gradient.z
+    const hL = terrainHeight(x-e,z);
+    const hR = terrainHeight(x+e,z);
+    const hD = terrainHeight(x,z-e);
+    const hU = terrainHeight(x,z+e);
+
+    const dx = (hR-hL)/(2*e);
+    const dz = (hU-hD)/(2*e);
+
+    return Math.sqrt(
+        dx*dx +
+        dz*dz
     );
-
 }
-
-
-// Surface normal
 
 function terrainNormal(x,z){
 
-    const gradient=
-        terrainGradient(
-            x,
-            z
-        );
+    const e = 0.5;
 
-    const normal=
-        new THREE.Vector3(
-            -gradient.x,
-            1,
-            -gradient.z
-        );
+    const hL = terrainHeight(x-e,z);
+    const hR = terrainHeight(x+e,z);
+    const hD = terrainHeight(x,z-e);
+    const hU = terrainHeight(x,z+e);
+
+    const normal = new THREE.Vector3(
+        hL-hR,
+        2*e,
+        hD-hU
+    );
 
     return normal.normalize();
-
 }
 
 
-// Biome classification
+// ==============================
+// BIOMES
+// ==============================
 
 function getBiome(x,z){
 
-    const height=
-        terrainHeight(
-            x,
-            z
-        );
+    const h = terrainHeight(x,z);
+    const moisture = fbm(
+        x*0.006+300,
+        z*0.006+700
+    );
 
-    const slope=
-        terrainSlope(
-            x,
-            z
-        );
-
-    if(height<1){
-
-        return "OCEAN";
-
+    if(h < 0){
+        return "water";
     }
 
-    if(
-        height<6 &&
-        slope<.3
-    ){
-
-        return "PLAINS";
-
+    if(h < 6){
+        return "plains";
     }
 
-    if(height<12){
+    if(h < 18){
 
-        return "HILLS";
+        if(moisture > 0.58){
+            return "forest";
+        }
 
+        return "grass";
     }
 
-    if(height<22){
-
-        return "MOUNTAINS";
-
+    if(h < 35){
+        return "rock";
     }
 
-    return "PEAK";
-
+    return "mountain";
 }
 
 
-// Scene
+// ==============================
+// TERRAIN MATERIALS
+// ==============================
 
-const scene=
-    new THREE.Scene();
+const materials = {
 
-scene.background=
-    new THREE.Color(
-        0x071019
-    );
+    water:new THREE.MeshStandardMaterial({
+        color:0x176b91,
+        roughness:0.2,
+        metalness:0.1
+    }),
 
-scene.fog=
-    new THREE.FogExp2(
-        0x071019,
-        .006
-    );
+    plains:new THREE.MeshStandardMaterial({
+        color:0x668c42,
+        roughness:1
+    }),
 
+    grass:new THREE.MeshStandardMaterial({
+        color:0x416b32,
+        roughness:1
+    }),
 
-// Camera
+    forest:new THREE.MeshStandardMaterial({
+        color:0x315b31,
+        roughness:1
+    }),
 
-const camera=
-    new THREE.PerspectiveCamera(
-        72,
-        innerWidth/
-        innerHeight,
-        .05,
-        1500
-    );
+    rock:new THREE.MeshStandardMaterial({
+        color:0x777777,
+        roughness:0.95
+    }),
 
-
-// Renderer
-
-const renderer=
-    new THREE.WebGLRenderer({
-
-        antialias:true,
-
-        powerPreference:
-            "high-performance"
-
-    });
-
-renderer.setPixelRatio(
-    Math.min(
-        window.devicePixelRatio,
-        1.5
-    )
-);
-
-renderer.setSize(
-    innerWidth,
-    innerHeight
-);
-
-renderer.shadowMap.enabled=true;
-
-renderer.shadowMap.type=
-    THREE.PCFSoftShadowMap;
-
-document.body.appendChild(
-    renderer.domElement
-);
-
-
-// Lighting
-
-const hemisphere=
-    new THREE.HemisphereLight(
-        0xaacfff,
-        0x162015,
-        1.4
-    );
-
-scene.add(
-    hemisphere
-);
-
-
-const sun=
-    new THREE.DirectionalLight(
-        0xffffff,
-        2
-    );
-
-sun.castShadow=true;
-
-sun.shadow.mapSize.set(
-    1024,
-    1024
-);
-
-sun.shadow.camera.near=1;
-
-sun.shadow.camera.far=500;
-
-sun.shadow.camera.left=-150;
-
-sun.shadow.camera.right=150;
-
-sun.shadow.camera.top=150;
-
-sun.shadow.camera.bottom=-150;
-
-scene.add(
-    sun
-);
-
-
-// Terrain materials
-
-const materials={
-
-    plains:
-        new THREE.MeshStandardMaterial({
-            color:0x4e7548,
-            roughness:1
-        }),
-
-    hills:
-        new THREE.MeshStandardMaterial({
-            color:0x687b52,
-            roughness:1
-        }),
-
-    mountains:
-        new THREE.MeshStandardMaterial({
-            color:0x686c6e,
-            roughness:1
-        }),
-
-    peaks:
-        new THREE.MeshStandardMaterial({
-            color:0xd0d0d0,
-            roughness:.9
-        })
-
+    mountain:new THREE.MeshStandardMaterial({
+        color:0x555555,
+        roughness:1
+    })
 };
 
 
-// Object materials
+// ==============================
+// SKY
+// ==============================
 
-const treeMaterial=
-    new THREE.MeshStandardMaterial({
-        color:0x405631,
-        roughness:1
-    });
-
-
-const rockMaterial=
-    new THREE.MeshStandardMaterial({
-        color:0x666a6c,
-        roughness:1
-    });
-
-
-// Reusable geometries
-
-const treeGeometry=
-    new THREE.CylinderGeometry(
-        .25,
-        .45,
-        1,
-        6
-    );
-
-
-const rockGeometry=
-    new THREE.IcosahedronGeometry(
-        1,
-        0
-    );
-
-
-// World containers
-
-const chunks=
-    new Map();
-
-const objects=
-    new THREE.Group();
-
-scene.add(
-    objects
+const skyGeometry = new THREE.SphereGeometry(
+    2500,
+    32,
+    16
 );
 
+const skyMaterial = new THREE.MeshBasicMaterial({
+    color:0x72a8d8,
+    side:THREE.BackSide,
+    fog:false
+});
 
-// Chunk key
+const sky = new THREE.Mesh(
+    skyGeometry,
+    skyMaterial
+);
+
+scene.add(sky);
+
+
+// ==============================
+// SUN
+// ==============================
+
+const sunLight = new THREE.DirectionalLight(
+    0xffffff,
+    2
+);
+
+sunLight.castShadow = true;
+
+sunLight.shadow.mapSize.width = 1024;
+sunLight.shadow.mapSize.height = 1024;
+
+sunLight.shadow.camera.left = -250;
+sunLight.shadow.camera.right = 250;
+sunLight.shadow.camera.top = 250;
+sunLight.shadow.camera.bottom = -250;
+
+sunLight.shadow.camera.near = 1;
+sunLight.shadow.camera.far = 1000;
+
+scene.add(sunLight);
+
+
+// ==============================
+// AMBIENT LIGHT
+// ==============================
+
+const ambientLight = new THREE.HemisphereLight(
+    0x9cc9ff,
+    0x28301d,
+    1
+);
+
+scene.add(ambientLight);
+
+
+// ==============================
+// SUN VISUAL
+// ==============================
+
+const sunSphere = new THREE.Mesh(
+    new THREE.SphereGeometry(18,16,16),
+    new THREE.MeshBasicMaterial({
+        color:0xffffcc
+    })
+);
+
+scene.add(sunSphere);
+
+
+// ==============================
+// TERRAIN CHUNKS
+// ==============================
 
 function chunkKey(cx,cz){
-
-    return cx+","+cz;
-
+    return cx + "," + cz;
 }
-
-
-// Select terrain material
-
-function materialForHeight(h){
-
-    if(h<1){
-
-        return materials.plains;
-
-    }
-
-    if(h<8){
-
-        return materials.plains;
-
-    }
-
-    if(h<14){
-
-        return materials.hills;
-
-    }
-
-    if(h<23){
-
-        return materials.mountains;
-
-    }
-
-    return materials.peaks;
-
-}
-
-
-// Create procedural objects
-
-function createChunkObjects(cx,cz){
-
-    const count=
-        8+
-        Math.floor(
-            hash(
-                cx+400,
-                cz+900
-            )*12
-        );
-
-    for(
-        let i=0;
-        i<count;
-        i++
-    ){
-
-        const rx=
-            hash(
-                cx*31+i,
-                cz*17+i
-            );
-
-        const rz=
-            hash(
-                cx*47+i,
-                cz*29+i
-            );
-
-        const x=
-            cx*CONFIG.chunkSize+
-            (rx-.5)*
-            CONFIG.chunkSize;
-
-        const z=
-            cz*CONFIG.chunkSize+
-            (rz-.5)*
-            CONFIG.chunkSize;
-
-        const h=
-            terrainHeight(
-                x,
-                z
-            );
-
-        if(h<3){
-
-            continue;
-
-        }
-
-        const type=
-            hash(
-                cx*73+i,
-                cz*83+i
-            );
-
-        let object;
-
-        if(type<.72){
-
-            const height=
-                2+
-                hash(
-                    i+100,
-                    cx
-                )*4;
-
-            object=
-                new THREE.Mesh(
-                    treeGeometry,
-                    treeMaterial
-                );
-
-            object.scale.set(
-                1,
-                height,
-                1
-            );
-
-            object.position.set(
-                x,
-                h+
-                height*.5,
-                z
-            );
-
-        }
-        else{
-
-            const scale=
-                .7+
-                hash(
-                    i+500,
-                    cz
-                )*1.4;
-
-            object=
-                new THREE.Mesh(
-                    rockGeometry,
-                    rockMaterial
-                );
-
-            object.scale.setScalar(
-                scale
-            );
-
-            object.position.set(
-                x,
-                h+
-                scale*.5,
-                z
-            );
-
-        }
-
-        object.castShadow=true;
-
-        object.receiveShadow=true;
-
-        object.userData.chunk=
-            chunkKey(
-                cx,
-                cz
-            );
-
-        objects.add(
-            object
-        );
-
-    }
-
-}
-
-
-// Create terrain chunk
 
 function createChunk(cx,cz){
 
-    const key=
-        chunkKey(
-            cx,
-            cz
-        );
+    const key = chunkKey(cx,cz);
 
-    if(
-        chunks.has(key)
-    ){
-
+    if(chunkMap.has(key)){
         return;
-
     }
 
-    const size=
-        CONFIG.chunkSize;
+    const geometry = new THREE.PlaneGeometry(
+        CHUNK_SIZE,
+        CHUNK_SIZE,
+        TERRAIN_SEGMENTS,
+        TERRAIN_SEGMENTS
+    );
 
-    const resolution=
-        CONFIG.terrainResolution;
+    geometry.rotateX(-Math.PI/2);
 
-    const geometry=
-        new THREE.PlaneGeometry(
-            size,
-            size,
-            resolution,
-            resolution
-        );
-
-    const positions=
+    const position =
         geometry.attributes.position;
 
-    let average=0;
+    for(let i=0;i<position.count;i++){
 
-    for(
-        let i=0;
-        i<positions.count;
-        i++
-    ){
+        const lx = position.getX(i);
+        const lz = position.getZ(i);
 
-        const localX=
-            positions.getX(i);
+        const wx =
+            cx * CHUNK_SIZE +
+            lx;
 
-        const localZ=
-            positions.getY(i);
+        const wz =
+            cz * CHUNK_SIZE +
+            lz;
 
-        const worldX=
-            cx*size+
-            localX;
+        const h =
+            terrainHeight(wx,wz);
 
-        const worldZ=
-            cz*size+
-            localZ;
-
-        const height=
-            terrainHeight(
-                worldX,
-                worldZ
-            );
-
-        positions.setZ(
-            i,
-            height
-        );
-
-        average+=height;
-
+        position.setY(i,h);
     }
 
-    average/=
-        positions.count;
-
-    geometry.rotateX(
-        -Math.PI/2
-    );
+    position.needsUpdate = true;
 
     geometry.computeVertexNormals();
 
-    const mesh=
-        new THREE.Mesh(
-            geometry,
-            materialForHeight(
-                average
-            )
+    const centerX =
+        cx * CHUNK_SIZE;
+
+    const centerZ =
+        cz * CHUNK_SIZE;
+
+    const centerHeight =
+        terrainHeight(
+            centerX,
+            centerZ
         );
 
+    const biome =
+        getBiome(
+            centerX,
+            centerZ
+        );
+
+    const mesh = new THREE.Mesh(
+        geometry,
+        materials[biome] || materials.grass
+    );
+
     mesh.position.set(
-        cx*size,
+        centerX,
         0,
-        cz*size
+        centerZ
     );
 
-    mesh.receiveShadow=true;
+    mesh.receiveShadow = true;
+    mesh.castShadow = false;
 
-    mesh.castShadow=false;
+    scene.add(mesh);
 
-    mesh.frustumCulled=true;
-
-    mesh.userData.cx=cx;
-
-    mesh.userData.cz=cz;
-
-    scene.add(
-        mesh
-    );
-
-    chunks.set(
-        key,
-        mesh
-    );
+    chunkMap.set(key,{
+        mesh,
+        cx,
+        cz
+    });
 
     createChunkObjects(
         cx,
         cz
     );
-
 }
 
 
-// Stream world around player
+// ==============================
+// PROCEDURAL OBJECTS
+// ==============================
 
-function streamWorld(x,z){
+const treeTrunkGeometry =
+    new THREE.CylinderGeometry(
+        0.45,
+        0.7,
+        5,
+        7
+    );
 
-    const cx=
-        Math.floor(
-            x/
-            CONFIG.chunkSize
+const treeLeavesGeometry =
+    new THREE.ConeGeometry(
+        3.2,
+        8,
+        8
+    );
+
+const rockGeometry =
+    new THREE.DodecahedronGeometry(
+        1.8,
+        0
+    );
+
+const trunkMaterial =
+    new THREE.MeshStandardMaterial({
+        color:0x5b3925,
+        roughness:1
+    });
+
+const leavesMaterial =
+    new THREE.MeshStandardMaterial({
+        color:0x214b26,
+        roughness:1
+    });
+
+const rockMaterial =
+    new THREE.MeshStandardMaterial({
+        color:0x686868,
+        roughness:1
+    });
+
+
+function createTree(x,z,scale){
+
+    const ground =
+        terrainHeight(x,z);
+
+    const trunk =
+        new THREE.Mesh(
+            treeTrunkGeometry,
+            trunkMaterial
         );
 
-    const cz=
+    trunk.position.set(
+        x,
+        ground + 2.5 * scale,
+        z
+    );
+
+    trunk.scale.setScalar(scale);
+
+    trunk.castShadow = true;
+    trunk.receiveShadow = true;
+
+    scene.add(trunk);
+
+
+    const leaves =
+        new THREE.Mesh(
+            treeLeavesGeometry,
+            leavesMaterial
+        );
+
+    leaves.position.set(
+        x,
+        ground + 7 * scale,
+        z
+    );
+
+    leaves.scale.setScalar(scale);
+
+    leaves.castShadow = true;
+
+    scene.add(leaves);
+}
+
+
+function createRock(x,z,scale){
+
+    const ground =
+        terrainHeight(x,z);
+
+    const rock =
+        new THREE.Mesh(
+            rockGeometry,
+            rockMaterial
+        );
+
+    rock.position.set(
+        x,
+        ground + scale * 0.8,
+        z
+    );
+
+    rock.scale.setScalar(scale);
+
+    rock.rotation.set(
+        hash(x,z)*3,
+        hash(z,x)*3,
+        hash(x+50,z+20)*3
+    );
+
+    rock.castShadow = true;
+    rock.receiveShadow = true;
+
+    scene.add(rock);
+}
+
+
+function createChunkObjects(cx,cz){
+
+    const baseX =
+        cx * CHUNK_SIZE -
+        CHUNK_SIZE/2;
+
+    const baseZ =
+        cz * CHUNK_SIZE -
+        CHUNK_SIZE/2;
+
+    for(let i=0;i<18;i++){
+
+        const x =
+            baseX +
+            hash(
+                cx*100+i,
+                cz*200+i
+            ) * CHUNK_SIZE;
+
+        const z =
+            baseZ +
+            hash(
+                cx*300+i,
+                cz*400+i
+            ) * CHUNK_SIZE;
+
+        const h =
+            terrainHeight(x,z);
+
+        const slope =
+            terrainSlope(x,z);
+
+        const biome =
+            getBiome(x,z);
+
+        if(
+            biome === "forest" &&
+            h > 4 &&
+            slope < 1.5
+        ){
+
+            const scale =
+                0.7 +
+                hash(i,cx+cz)*0.7;
+
+            createTree(
+                x,
+                z,
+                scale
+            );
+
+        }else if(
+            biome === "grass" &&
+            slope < 2.5 &&
+            hash(cx+i,cz-i) > 0.6
+        ){
+
+            createTree(
+                x,
+                z,
+                0.6 +
+                hash(z,i)*0.5
+            );
+
+        }else if(
+            biome === "rock" ||
+            biome === "mountain"
+        ){
+
+            if(hash(i*7,cx*3+cz) > 0.4){
+
+                createRock(
+                    x,
+                    z,
+                    0.5 +
+                    hash(z*2,i)*1.2
+                );
+            }
+        }
+    }
+}
+
+
+// ==============================
+// WORLD STREAMING
+// ==============================
+
+function updateWorld(){
+
+    const cx =
         Math.floor(
-            z/
-            CONFIG.chunkSize
+            player.position.x /
+            CHUNK_SIZE
+        );
+
+    const cz =
+        Math.floor(
+            player.position.z /
+            CHUNK_SIZE
         );
 
     for(
-        let dx=-CONFIG.renderRadius;
-        dx<=CONFIG.renderRadius;
-        dx++
+        let x=-VIEW_DISTANCE;
+        x<=VIEW_DISTANCE;
+        x++
     ){
 
         for(
-            let dz=-CONFIG.renderRadius;
-        dz<=CONFIG.renderRadius;
-        dz++
+            let z=-VIEW_DISTANCE;
+            z<=VIEW_DISTANCE;
+            z++
         ){
 
             createChunk(
-                cx+dx,
-                cz+dz
+                cx+x,
+                cz+z
             );
-
         }
-
     }
-
 }
 
 
-// Player state
+// ==============================
+// PLAYER
+// ==============================
 
-const player={
+const player = {
 
-    position:
-        new THREE.Vector3(),
+    position:new THREE.Vector3(
+        0,
+        terrainHeight(0,0)+2,
+        0
+    ),
 
-    velocity:
-        new THREE.Vector3(),
+    velocity:new THREE.Vector3(),
 
     yaw:0,
 
     pitch:0,
 
-    grounded:false
+    height:1.8,
 
+    grounded:false,
+
+    speed:12,
+
+    gravity:-35,
+
+    jumpPower:12
 };
 
 
-player.position.set(
-    0,
-    terrainHeight(
-        0,
-        0
-    )+
-    CONFIG.playerHeight,
-    0
-);
+// ==============================
+// INPUT
+// ==============================
 
+const keys = {};
 
-// Input state
-
-const keys=
-    new Set();
-
-let sprint=false;
-
-
-// Keyboard input
-
-window.addEventListener(
+addEventListener(
     "keydown",
-    event => {
-
-        keys.add(
-            event.key.toLowerCase()
-        );
+    e => {
+        keys[e.code] = true;
 
         if(
-            event.code==="Space"
+            e.code === "Space" &&
+            player.grounded
         ){
 
-            jump();
+            player.velocity.y =
+                player.jumpPower;
 
+            player.grounded = false;
+        }
+    }
+);
+
+addEventListener(
+    "keyup",
+    e => {
+        keys[e.code] = false;
+    }
+);
+
+
+// ==============================
+// MOBILE JOYSTICK
+// ==============================
+
+let joystickActive = false;
+let joystickX = 0;
+let joystickY = 0;
+
+let joystickPointer = null;
+
+const joystickSize = 150;
+
+const joystick = {
+    x:0,
+    y:0
+};
+
+
+// ==============================
+// TOUCH CONTROLS
+// ==============================
+
+const touchCanvas =
+    renderer.domElement;
+
+touchCanvas.addEventListener(
+    "pointerdown",
+    e => {
+
+        if(
+            e.pointerType !== "touch"
+        ){
+            return;
         }
 
-    }
-);
+        if(
+            e.clientX <
+            innerWidth * 0.45
+        ){
+            joystickActive = true;
+            joystickPointer = e.pointerId;
+            joystick.x = e.clientX;
+            joystick.y = e.clientY;
+            joystickX = 0;
+            joystickY = 0;
+            return;
+        }
 
-
-window.addEventListener(
-    "keyup",
-    event => {
-
-        keys.delete(
-            event.key.toLowerCase()
+        touchCanvas.setPointerCapture(
+            e.pointerId
         );
 
+        touchLook.active = true;
+        touchLook.lastX = e.clientX;
+        touchLook.lastY = e.clientY;
+    }
+);
+
+touchCanvas.addEventListener(
+    "pointermove",
+    e => {
+
+        if(
+            e.pointerType !== "touch"
+        ){
+            return;
+        }
+
+        if(
+            joystickActive &&
+            e.pointerId === joystickPointer
+        ){
+
+            const dx =
+                e.clientX - joystick.x;
+
+            const dy =
+                e.clientY - joystick.y;
+
+            const max =
+                65;
+
+            joystickX =
+                THREE.MathUtils.clamp(
+                    dx/max,
+                    -1,
+                    1
+                );
+
+            joystickY =
+                THREE.MathUtils.clamp(
+                    dy/max,
+                    -1,
+                    1
+                );
+
+            return;
+        }
+
+        if(touchLook.active){
+
+            const dx =
+                e.clientX -
+                touchLook.lastX;
+
+            const dy =
+                e.clientY -
+                touchLook.lastY;
+
+            player.yaw -=
+                dx * 0.003;
+
+            player.pitch -=
+                dy * 0.003;
+
+            player.pitch =
+                THREE.MathUtils.clamp(
+                    player.pitch,
+                    -1.45,
+                    1.45
+                );
+
+            touchLook.lastX =
+                e.clientX;
+
+            touchLook.lastY =
+                e.clientY;
+        }
+    }
+);
+
+touchCanvas.addEventListener(
+    "pointerup",
+    e => {
+
+        if(
+            e.pointerType !== "touch"
+        ){
+            return;
+        }
+
+        if(
+            e.pointerId ===
+            joystickPointer
+        ){
+
+            joystickActive = false;
+            joystickPointer = null;
+            joystickX = 0;
+            joystickY = 0;
+        }
+
+        touchLook.active = false;
+    }
+);
+
+touchCanvas.addEventListener(
+    "pointercancel",
+    e => {
+
+        if(
+            e.pointerId ===
+            joystickPointer
+        ){
+
+            joystickActive = false;
+            joystickPointer = null;
+            joystickX = 0;
+            joystickY = 0;
+        }
+
+        touchLook.active = false;
     }
 );
 
 
-// Movement direction
+const touchLook = {
+    active:false,
+    lastX:0,
+    lastY:0
+};
 
-const movement=
+
+// ==============================
+// CAMERA MOUSE LOOK
+// ==============================
+
+let mouseLocked = false;
+
+renderer.domElement.addEventListener(
+    "click",
+    () => {
+
+        if(
+            innerWidth > 700
+        ){
+            renderer.domElement.requestPointerLock();
+        }
+    }
+);
+
+document.addEventListener(
+    "pointerlockchange",
+    () => {
+
+        mouseLocked =
+            document.pointerLockElement ===
+            renderer.domElement;
+    }
+);
+
+document.addEventListener(
+    "mousemove",
+    e => {
+
+        if(!mouseLocked){
+            return;
+        }
+
+        player.yaw -=
+            e.movementX * 0.002;
+
+        player.pitch -=
+            e.movementY * 0.002;
+
+        player.pitch =
+            THREE.MathUtils.clamp(
+                player.pitch,
+                -1.45,
+                1.45
+            );
+    }
+);
+
+
+// ==============================
+// MOVEMENT
+// ==============================
+
+const moveDirection =
     new THREE.Vector3();
 
-const forward=
+const forward =
     new THREE.Vector3();
 
-const right=
+const right =
     new THREE.Vector3();
 
-function movementDirection(){
+function updateMovement(dt){
 
-    movement.set(
+    let forwardInput = 0;
+    let rightInput = 0;
+
+    if(keys["KeyW"]){
+        forwardInput += 1;
+    }
+
+    if(keys["KeyS"]){
+        forwardInput -= 1;
+    }
+
+    if(keys["KeyD"]){
+        rightInput += 1;
+    }
+
+    if(keys["KeyA"]){
+        rightInput -= 1;
+    }
+
+
+    if(joystickActive){
+
+        // Negative Y is forward on a normal joystick.
+        forwardInput =
+            -joystickY;
+
+        rightInput =
+            joystickX;
+    }
+
+
+    moveDirection.set(
         0,
         0,
         0
     );
 
+
+    // Forward points in the direction
+    // the camera is facing.
+
     forward.set(
-        Math.sin(
-            player.yaw
-        ),
+        -Math.sin(player.yaw),
         0,
-        Math.cos(
-            player.yaw
-        )
+        -Math.cos(player.yaw)
     );
 
     right.set(
-        Math.cos(
-            player.yaw
-        ),
+        Math.cos(player.yaw),
         0,
-        -Math.sin(
-            player.yaw
-        )
+        -Math.sin(player.yaw)
     );
 
-    if(
-        keys.has("w")||
-        keys.has("arrowup")
-    ){
 
-        movement.add(
-            forward
+    moveDirection.addScaledVector(
+        forward,
+        forwardInput
+    );
+
+    moveDirection.addScaledVector(
+        right,
+        rightInput
+    );
+
+
+    if(moveDirection.lengthSq() > 1){
+        moveDirection.normalize();
+    }
+
+
+    const acceleration =
+        player.grounded
+        ? 55
+        : 20;
+
+
+    player.velocity.x =
+        THREE.MathUtils.damp(
+            player.velocity.x,
+            moveDirection.x *
+            player.speed,
+            acceleration,
+            dt
         );
 
-    }
-
-    if(
-        keys.has("s")||
-        keys.has("arrowdown")
-    ){
-
-        movement.sub(
-            forward
+    player.velocity.z =
+        THREE.MathUtils.damp(
+            player.velocity.z,
+            moveDirection.z *
+            player.speed,
+            acceleration,
+            dt
         );
-
-    }
-
-    if(
-        keys.has("d")||
-        keys.has("arrowright")
-    ){
-
-        movement.add(
-            right
-        );
-
-    }
-
-    if(
-        keys.has("a")||
-        keys.has("arrowleft")
-    ){
-
-        movement.sub(
-            right
-        );
-
-    }
-
-    if(
-        movement.lengthSq()>1
-    ){
-
-        movement.normalize();
-
-    }
-
-    return movement;
-
 }
 
 
-// Physics derivative
-
-const derivativePosition=
-    new THREE.Vector3();
-
-const derivativeVelocity=
-    new THREE.Vector3();
-
-function derivative(){
-
-    const direction=
-        movementDirection();
-
-    derivativePosition.copy(
-        player.velocity
-    );
-
-    derivativeVelocity.set(
-        direction.x*
-        CONFIG.acceleration,
-
-        CONFIG.gravity,
-
-        direction.z*
-        CONFIG.acceleration
-    );
-
-}
-
-
-// RK4 temporary vectors
-
-const rkP0=
-    new THREE.Vector3();
-
-const rkV0=
-    new THREE.Vector3();
-
-const k1p=
-    new THREE.Vector3();
-
-const k1v=
-    new THREE.Vector3();
-
-const k2p=
-    new THREE.Vector3();
-
-const k2v=
-    new THREE.Vector3();
-
-const k3p=
-    new THREE.Vector3();
-
-const k3v=
-    new THREE.Vector3();
-
-const k4p=
-    new THREE.Vector3();
-
-const k4v=
-    new THREE.Vector3();
-
-
-// RK4 integration
-
-function rk4(dt){
-
-    rkP0.copy(
-        player.position
-    );
-
-    rkV0.copy(
-        player.velocity
-    );
-
-    derivative();
-
-    k1p.copy(
-        derivativePosition
-    );
-
-    k1v.copy(
-        derivativeVelocity
-    );
-
-    player.position.copy(
-        rkP0
-    ).addScaledVector(
-        k1p,
-        dt*.5
-    );
-
-    player.velocity.copy(
-        rkV0
-    ).addScaledVector(
-        k1v,
-        dt*.5
-    );
-
-    derivative();
-
-    k2p.copy(
-        derivativePosition
-    );
-
-    k2v.copy(
-        derivativeVelocity
-    );
-
-    player.position.copy(
-        rkP0
-    ).addScaledVector(
-        k2p,
-        dt*.5
-    );
-
-    player.velocity.copy(
-        rkV0
-    ).addScaledVector(
-        k2v,
-        dt*.5
-    );
-
-    derivative();
-
-    k3p.copy(
-        derivativePosition
-    );
-
-    k3v.copy(
-        derivativeVelocity
-    );
-
-    player.position.copy(
-        rkP0
-    ).addScaledVector(
-        k3p,
-        dt
-    );
-
-    player.velocity.copy(
-        rkV0
-    ).addScaledVector(
-        k3v,
-        dt
-    );
-
-    derivative();
-
-    k4p.copy(
-        derivativePosition
-    );
-
-    k4v.copy(
-        derivativeVelocity
-    );
-
-    player.position.copy(
-        rkP0
-    );
-
-    player.velocity.copy(
-        rkV0
-    );
-
-    player.position.x+=
-        dt/6*
-        (
-            k1p.x+
-            2*k2p.x+
-            2*k3p.x+
-            k4p.x
-        );
-
-    player.position.y+=
-        dt/6*
-        (
-            k1p.y+
-            2*k2p.y+
-            2*k3p.y+
-            k4p.y
-        );
-
-    player.position.z+=
-        dt/6*
-        (
-            k1p.z+
-            2*k2p.z+
-            2*k3p.z+
-            k4p.z
-        );
-
-    player.velocity.x+=
-        dt/6*
-        (
-            k1v.x+
-            2*k2v.x+
-            2*k3v.x+
-            k4v.x
-        );
-
-    player.velocity.y+=
-        dt/6*
-        (
-            k1v.y+
-            2*k2v.y+
-            2*k3v.y+
-            k4v.y
-        );
-
-    player.velocity.z+=
-        dt/6*
-        (
-            k1v.z+
-            2*k2v.z+
-            2*k3v.z+
-            k4v.z
-        );
-
-}
-
-
-// Physics update
+// ==============================
+// PLAYER PHYSICS
+// ==============================
 
 function updatePhysics(dt){
 
-    rk4(dt);
+    updateMovement(dt);
 
-    const maxSpeed=
-        sprint?
-        CONFIG.sprintSpeed:
-        CONFIG.walkSpeed;
 
-    const horizontalSpeed=
-        Math.hypot(
-            player.velocity.x,
-            player.velocity.z
-        );
+    player.velocity.y +=
+        player.gravity * dt;
 
-    if(
-        horizontalSpeed>
-        maxSpeed
-    ){
 
-        const factor=
-            maxSpeed/
-            horizontalSpeed;
+    player.position.x +=
+        player.velocity.x * dt;
 
-        player.velocity.x*=
-            factor;
+    player.position.z +=
+        player.velocity.z * dt;
 
-        player.velocity.z*=
-            factor;
+    player.position.y +=
+        player.velocity.y * dt;
 
-    }
 
-    const drag=
-        Math.exp(
-            -8*dt
-        );
-
-    player.velocity.x*=
-        drag;
-
-    player.velocity.z*=
-        drag;
-
-    const ground=
+    const ground =
         terrainHeight(
             player.position.x,
             player.position.z
-        )+
-        CONFIG.playerHeight;
+        );
+
+
+    const playerGround =
+        ground +
+        player.height;
+
 
     if(
-        player.position.y<=
-        ground
+        player.position.y <=
+        playerGround
     ){
 
-        player.position.y=
-            ground;
+        player.position.y =
+            playerGround;
 
-        if(
-            player.velocity.y<0
-        ){
-
-            player.velocity.y=0;
-
+        if(player.velocity.y < 0){
+            player.velocity.y = 0;
         }
 
-        player.grounded=true;
+        player.grounded = true;
 
+    }else{
+
+        player.grounded = false;
     }
-    else{
-
-        player.grounded=false;
-
-    }
-
 }
 
 
-// Jump
-
-function jump(){
-
-    if(
-        player.grounded
-    ){
-
-        player.velocity.y=
-            CONFIG.jumpVelocity;
-
-        player.grounded=false;
-
-    }
-
-}
-
-
-// Camera quaternion
-
-const cameraQuaternion=
-    new THREE.Quaternion();
-
-const cameraEuler=
-    new THREE.Euler(
-        0,
-        0,
-        0,
-        "YXZ"
-    );
+// ==============================
+// CAMERA
+// ==============================
 
 function updateCamera(){
 
@@ -1760,681 +1193,197 @@ function updateCamera(){
         player.position
     );
 
-    cameraEuler.set(
-        player.pitch,
-        player.yaw,
-        0,
-        "YXZ"
-    );
+    camera.rotation.order =
+        "YXZ";
 
-    cameraQuaternion.setFromEuler(
-        cameraEuler
-    );
+    camera.rotation.y =
+        player.yaw;
 
-    camera.quaternion.copy(
-        cameraQuaternion
-    );
-
+    camera.rotation.x =
+        player.pitch;
 }
 
 
-// Touch button binding
+// ==============================
+// DAY / NIGHT
+// ==============================
 
-function bindButton(id,key){
+let worldTime = 8;
 
-    const button=
-        document.getElementById(
-            id
-        );
+const DAY_LENGTH =
+    180;
 
-    button.addEventListener(
-        "pointerdown",
-        event => {
+function updateDayNight(dt){
 
-            event.preventDefault();
+    worldTime +=
+        dt *
+        24 /
+        DAY_LENGTH;
 
-            keys.add(key);
-
-            button.setPointerCapture(
-                event.pointerId
-            );
-
-        }
-    );
-
-    button.addEventListener(
-        "pointerup",
-        event => {
-
-            event.preventDefault();
-
-            keys.delete(key);
-
-        }
-    );
-
-    button.addEventListener(
-        "pointercancel",
-        () => {
-
-            keys.delete(key);
-
-        }
-    );
-
-}
-
-
-bindButton(
-    "forward",
-    "w"
-);
-
-bindButton(
-    "back",
-    "s"
-);
-
-bindButton(
-    "left",
-    "a"
-);
-
-bindButton(
-    "right",
-    "d"
-);
-
-
-document
-.getElementById("jump")
-.addEventListener(
-    "pointerdown",
-    event => {
-
-        event.preventDefault();
-
-        jump();
-
+    if(worldTime >= 24){
+        worldTime -= 24;
     }
-);
 
 
-const sprintButton=
-    document.getElementById(
-        "sprint"
+    const angle =
+        (worldTime / 24) *
+        Math.PI * 2;
+
+
+    const sunRadius = 700;
+
+
+    const sunX =
+        Math.cos(angle) *
+        sunRadius;
+
+    const sunY =
+        Math.sin(angle) *
+        sunRadius;
+
+    const sunZ =
+        250;
+
+
+    sunLight.position.set(
+        sunX,
+        sunY,
+        sunZ
+    );
+
+    sunSphere.position.copy(
+        sunLight.position
     );
 
 
-sprintButton.addEventListener(
-    "pointerdown",
-    event => {
-
-        event.preventDefault();
-
-        sprint=true;
-
-    }
-);
-
-
-sprintButton.addEventListener(
-    "pointerup",
-    () => {
-
-        sprint=false;
-
-    }
-);
-
-
-sprintButton.addEventListener(
-    "pointercancel",
-    () => {
-
-        sprint=false;
-
-    }
-);
-
-
-// Camera look
-
-let looking=false;
-
-let lastX=0;
-
-let lastY=0;
-
-
-renderer.domElement.addEventListener(
-    "pointerdown",
-    event => {
-
-        looking=true;
-
-        lastX=
-            event.clientX;
-
-        lastY=
-            event.clientY;
-
-    }
-);
-
-
-window.addEventListener(
-    "pointerup",
-    () => {
-
-        looking=false;
-
-    }
-);
-
-
-window.addEventListener(
-    "pointermove",
-    event => {
-
-        if(!looking){
-
-            return;
-
-        }
-
-        const dx=
-            event.clientX-
-            lastX;
-
-        const dy=
-            event.clientY-
-            lastY;
-
-        lastX=
-            event.clientX;
-
-        lastY=
-            event.clientY;
-
-        player.yaw-=
-            dx*.004;
-
-        player.pitch-=
-            dy*.004;
-
-        player.pitch=
-            THREE.MathUtils.clamp(
-                player.pitch,
-                -1.45,
-                1.45
-            );
-
-    }
-);
-
-
-// A* pathfinding
-
-function aStar(start,end){
-
-    const open=[
-        start
-    ];
-
-    const came=
-        new Map();
-
-    const cost=
-        new Map();
-
-    cost.set(
-        start,
-        0
-    );
-
-    function heuristic(node){
-
-        const p=
-            node
-            .split(",")
-            .map(Number);
-
-        const e=
-            end
-            .split(",")
-            .map(Number);
-
-        return Math.hypot(
-            p[0]-e[0],
-            p[1]-e[1]
-        );
-
-    }
-
-    while(
-        open.length>0
-    ){
-
-        let bestIndex=0;
-
-        let bestScore=
-            Infinity;
-
-        for(
-            let i=0;
-            i<open.length;
-            i++
-        ){
-
-            const node=
-                open[i];
-
-            const score=
-                cost.get(node)+
-                heuristic(node);
-
-            if(
-                score<
-                bestScore
-            ){
-
-                bestScore=
-                    score;
-
-                bestIndex=i;
-
-            }
-
-        }
-
-        const current=
-            open.splice(
-                bestIndex,
-                1
-            )[0];
-
-        if(
-            current===end
-        ){
-
-            const result=[];
-
-            let node=
-                current;
-
-            while(node){
-
-                result.push(
-                    node
-                );
-
-                node=
-                    came.get(node);
-
-            }
-
-            return result.reverse();
-
-        }
-
-        const parts=
-            current
-            .split(",")
-            .map(Number);
-
-        const x=parts[0];
-
-        const z=parts[1];
-
-        const neighbors=[
-
-            [1,0],
-            [-1,0],
-            [0,1],
-            [0,-1]
-
-        ];
-
-        for(
-            let i=0;
-            i<neighbors.length;
-            i++
-        ){
-
-            const dx=
-                neighbors[i][0];
-
-            const dz=
-                neighbors[i][1];
-
-            const nx=
-                x+dx;
-
-            const nz=
-                z+dz;
-
-            const next=
-                nx+","+nz;
-
-            const currentHeight=
-                terrainHeight(
-                    x*4,
-                    z*4
-                );
-
-            const nextHeight=
-                terrainHeight(
-                    nx*4,
-                    nz*4
-                );
-
-            const heightDifference=
-                Math.abs(
-                    currentHeight-
-                    nextHeight
-                );
-
-            const newCost=
-                cost.get(current)+
-                1+
-                heightDifference*.04;
-
-            if(
-                !cost.has(next)||
-                newCost<
-                cost.get(next)
-            ){
-
-                cost.set(
-                    next,
-                    newCost
-                );
-
-                came.set(
-                    next,
-                    current
-                );
-
-                if(
-                    !open.includes(next)
-                ){
-
-                    open.push(
-                        next
-                    );
-
-                }
-
-            }
-
-        }
-
-    }
-
-    return [];
-
-}
-
-
-const demonstrationPath=
-    aStar(
-        "0,0",
-        "15,12"
-    );
-
-
-// Day and night
-
-let dayTime=0;
-
-function updateSun(dt){
-
-    dayTime+=
-        dt*.03;
-
-    const angle=
-        dayTime;
-
-    const sunHeight=
-        Math.sin(
-            angle
-        );
-
-    sun.position.set(
-        Math.cos(angle)*180,
-        40+
+    const daylight =
         Math.max(
             0,
-            sunHeight
-        )*180,
-        Math.sin(angle)*140
-    );
+            Math.sin(angle)
+        );
 
-    const daylight=
+
+    const dawn =
         Math.max(
             0,
-            sunHeight
+            1 -
+            Math.abs(
+                daylight - 0.3
+            ) * 3
         );
 
-    sun.intensity=
-        .2+
-        daylight*2;
 
-    hemisphere.intensity=
-        .5+
-        daylight*1.2;
+    sunLight.intensity =
+        0.15 +
+        daylight * 2.0;
 
+
+    ambientLight.intensity =
+        0.18 +
+        daylight * 0.85;
+
+
+    const skyDay =
+        new THREE.Color(
+            0x72a8d8
+        );
+
+    const skyNight =
+        new THREE.Color(
+            0x071329
+        );
+
+    const skyColor =
+        skyNight.clone().lerp(
+            skyDay,
+            Math.pow(
+                daylight,
+                0.45
+            )
+        );
+
+
+    skyMaterial.color.copy(
+        skyColor
+    );
+
+
+    scene.fog.color.copy(
+        skyColor
+    );
+
+
+    sunLight.color.setHSL(
+        THREE.MathUtils.lerp(
+            0.08,
+            0.13,
+            daylight
+        ),
+        0.8,
+        THREE.MathUtils.lerp(
+            0.65,
+            1,
+            daylight
+        )
+    );
+
+
+    ambientLight.color.copy(
+        skyColor
+    );
+
+
+    const hour =
+        Math.floor(worldTime);
+
+    const minute =
+        Math.floor(
+            (worldTime-hour)*60
+        );
+
+
+    document.title =
+        "World " +
+        String(hour).padStart(2,"0") +
+        ":" +
+        String(minute).padStart(2,"0");
 }
 
 
-// Performance counters
+// ==============================
+// FOG
+// ==============================
 
-let renderedFrames=0;
-
-let fpsTime=0;
-
-let fps=0;
-
-let totalFrame=0;
-
-
-// HUD update
-
-function updateHUD(dt){
-
-    renderedFrames++;
-
-    totalFrame++;
-
-    fpsTime+=dt;
-
-    if(
-        fpsTime>=1
-    ){
-
-        fps=
-            renderedFrames/
-            fpsTime;
-
-        renderedFrames=0;
-
-        fpsTime=0;
-
-    }
-
-    const p=
-        player.position;
-
-    const v=
-        player.velocity;
-
-    document.getElementById(
-        "fps"
-    ).textContent=
-        fps.toFixed(0);
-
-    document.getElementById(
-        "frame"
-    ).textContent=
-        totalFrame;
-
-    document.getElementById(
-        "pos"
-    ).textContent=
-        p.x.toFixed(1)+
-        " "+
-        p.y.toFixed(1)+
-        " "+
-        p.z.toFixed(1);
-
-    document.getElementById(
-        "vel"
-    ).textContent=
-        v.x.toFixed(1)+
-        " "+
-        v.y.toFixed(1)+
-        " "+
-        v.z.toFixed(1);
-
-    document.getElementById(
-        "terrain"
-    ).textContent=
-        terrainHeight(
-            p.x,
-            p.z
-        ).toFixed(2);
-
-    document.getElementById(
-        "slope"
-    ).textContent=
-        terrainSlope(
-            p.x,
-            p.z
-        ).toFixed(3);
-
-    document.getElementById(
-        "biome"
-    ).textContent=
-        getBiome(
-            p.x,
-            p.z
-        );
-
-    document.getElementById(
-        "chunks"
-    ).textContent=
-        chunks.size;
-
-    document.getElementById(
-        "instances"
-    ).textContent=
-        objects.children.length;
-
-    document.getElementById(
-        "cache"
-    ).textContent=
-        heightCache.size();
-
-    document.getElementById(
-        "path"
-    ).textContent=
-        demonstrationPath.length;
-
-    document.getElementById(
-        "seed"
-    ).textContent=
-        CONFIG.seed;
-
-}
+scene.fog =
+    new THREE.Fog(
+        0x72a8d8,
+        300,
+        1800
+    );
 
 
-// Initial world
+// ==============================
+// INITIAL WORLD
+// ==============================
 
-streamWorld(
-    player.position.x,
-    player.position.z
+createChunk(
+    0,
+    0
 );
 
-
-// Fixed timestep accumulator
-
-let accumulator=0;
-
-let previousTime=
-    performance.now();
+updateWorld();
 
 
-// Main engine loop
+// ==============================
+// RESIZE
+// ==============================
 
-function engineLoop(now){
-
-    requestAnimationFrame(
-        engineLoop
-    );
-
-    let frameTime=
-        (now-previousTime)/
-        1000;
-
-    previousTime=now;
-
-    frameTime=
-        Math.min(
-            frameTime,
-            .1
-        );
-
-    accumulator+=
-        frameTime;
-
-    while(
-        accumulator>=
-        CONFIG.fixedStep
-    ){
-
-        updatePhysics(
-            CONFIG.fixedStep
-        );
-
-        accumulator-=
-            CONFIG.fixedStep;
-
-    }
-
-    updateCamera();
-
-    updateSun(
-        frameTime
-    );
-
-    updateHUD(
-        frameTime
-    );
-
-    renderer.render(
-        scene,
-        camera
-    );
-
-}
-
-
-// Start engine
-
-requestAnimationFrame(
-    engineLoop
-);
-
-
-// Resize handling
-
-window.addEventListener(
+addEventListener(
     "resize",
     () => {
 
-        camera.aspect=
-            innerWidth/
+        camera.aspect =
+            innerWidth /
             innerHeight;
 
         camera.updateProjectionMatrix();
@@ -2444,7 +1393,104 @@ window.addEventListener(
             innerHeight
         );
 
+        renderer.setPixelRatio(
+            Math.min(
+                devicePixelRatio,
+                1.5
+            )
+        );
     }
+);
+
+
+// ==============================
+// MAIN LOOP
+// ==============================
+
+let previousTime =
+    performance.now();
+
+let accumulator = 0;
+
+const FIXED_STEP =
+    1/120;
+
+let worldUpdateTimer = 0;
+
+
+function animate(now){
+
+    requestAnimationFrame(
+        animate
+    );
+
+
+    let dt =
+        (now - previousTime) /
+        1000;
+
+    previousTime = now;
+
+
+    dt =
+        Math.min(
+            dt,
+            0.1
+        );
+
+
+    accumulator += dt;
+
+
+    while(
+        accumulator >=
+        FIXED_STEP
+    ){
+
+        updatePhysics(
+            FIXED_STEP
+        );
+
+        accumulator -=
+            FIXED_STEP;
+    }
+
+
+    updateCamera();
+
+
+    worldUpdateTimer += dt;
+
+    if(
+        worldUpdateTimer > 0.25
+    ){
+
+        updateWorld();
+
+        worldUpdateTimer = 0;
+    }
+
+
+    updateDayNight(dt);
+
+
+    // Keep the sky centered
+    // around the player.
+
+    sky.position.copy(
+        camera.position
+    );
+
+
+    renderer.render(
+        scene,
+        camera
+    );
+}
+
+
+requestAnimationFrame(
+    animate
 );
 
 </script>
