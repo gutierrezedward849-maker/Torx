@@ -1,1 +1,205 @@
 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Torx Username Checker</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:18px;background:#101010;color:#eee;font-family:Arial,sans-serif}
+main{max-width:520px;margin:auto}
+h1{font-size:24px}
+p,.muted{color:#999}
+.panel{background:#1b1b1b;border:1px solid #333;border-radius:10px;padding:15px;margin:14px 0}
+label{display:block;margin:13px 0 6px}
+input,select,button{width:100%;padding:12px;border-radius:7px;border:1px solid #444;background:#111;color:#eee;font-size:15px}
+button{margin-top:12px;background:#eee;color:#111;font-weight:bold;border:0}
+button:disabled{opacity:.5}
+.result{padding:10px;margin:7px 0;background:#151515;border:1px solid #333;border-radius:7px;overflow-wrap:anywhere}
+.available{color:#72e6a1}
+.taken{color:#ff8585}
+.invalid{color:#ffcb72}
+.unknown{color:#bbb}
+.small{font-size:12px;color:#888}
+</style>
+</head>
+<body>
+<main>
+<h1>TORX // USERNAME CHECKER</h1>
+<p>Random letter generation and Roblox username validation.</p>
+
+<section class="panel">
+<label for="length">Username length</label>
+<select id="length">
+<option>3</option><option>4</option><option selected>5</option>
+<option>6</option><option>7</option><option>8</option>
+<option>9</option><option>10</option><option>12</option>
+<option>15</option><option>20</option>
+</select>
+
+<label for="count">Number to check (1–50)</label>
+<input id="count" type="number" min="1" max="50" value="10">
+
+<label for="caseMode">Capitalization</label>
+<select id="caseMode">
+<option value="lower">lowercase</option>
+<option value="upper">UPPERCASE</option>
+<option value="mixed" selected>Mixed case</option>
+</select>
+
+<button id="start">Generate and check</button>
+<button id="stop" disabled>Stop</button>
+<div id="status">Ready.</div>
+</section>
+
+<section class="panel">
+<strong>Results</strong>
+<div id="results"><p>No results yet.</p></div>
+</section>
+
+<p class="small">
+Roblox usernames are case-insensitive. Different capitalization does not
+create a separate username. Validation results may not guarantee successful
+registration.
+</p>
+</main>
+
+<script>
+"use strict";
+
+const WORKER_URL =
+  "https://userkeeper.gutierrezedward849.workers.dev";
+
+const $ = id => document.getElementById(id);
+let running = false;
+let shouldStop = false;
+
+function randomUsername(length, mode) {
+  const lower = "abcdefghijklmnopqrstuvwxyz";
+  const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const chars = mode === "lower" ? lower :
+                mode === "upper" ? upper : lower + upper;
+
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return result;
+}
+
+function addResult(username, message, className) {
+  const row = document.createElement("div");
+  row.className = "result";
+
+  const name = document.createElement("strong");
+  name.textContent = username + " — ";
+
+  const status = document.createElement("span");
+  status.className = className;
+  status.textContent = message;
+
+  row.append(name, status);
+  $("results").prepend(row);
+}
+
+async function checkUsername(username) {
+  const endpoint = WORKER_URL.replace(/\/+$/, "") +
+    "/validate?username=" + encodeURIComponent(username);
+
+  const response = await fetch(endpoint, {
+    method: "GET",
+    headers: { "Accept": "application/json" }
+  });
+
+  const body = await response.text();
+  let data;
+
+  try {
+    data = JSON.parse(body);
+  } catch {
+    throw new Error("Worker returned an unexpected response");
+  }
+
+  if (!response.ok) {
+    throw new Error(data.error || "HTTP " + response.status);
+  }
+
+  if (typeof data.code !== "number") {
+    throw new Error(data.error || "Missing validation code");
+  }
+
+  switch (data.code) {
+    case 0:
+      return ["Available according to validation", "available"];
+    case 1:
+      return ["Taken", "taken"];
+    case 2:
+      return ["Invalid username", "invalid"];
+    case 3:
+      return ["Rejected by Roblox", "invalid"];
+    default:
+      return ["Unknown status (code " + data.code + ")", "unknown"];
+  }
+}
+
+$("start").addEventListener("click", async () => {
+  if (running) return;
+
+  const length = Number($("length").value);
+  const count = Number($("count").value);
+  const mode = $("caseMode").value;
+
+  if (!Number.isInteger(count) || count < 1 || count > 50) {
+    $("status").textContent = "Enter a number between 1 and 50.";
+    return;
+  }
+
+  running = true;
+  shouldStop = false;
+  $("start").disabled = true;
+  $("stop").disabled = false;
+  $("results").replaceChildren();
+
+  let completed = 0;
+
+  try {
+    for (let i = 0; i < count; i++) {
+      if (shouldStop) break;
+
+      const username = randomUsername(length, mode);
+      $("status").textContent =
+        "Checking " + (i + 1) + " of " + count + ": " + username;
+
+      try {
+        const [message, cls] = await checkUsername(username);
+        addResult(username, message, cls);
+      } catch (error) {
+        addResult(username, "Unknown: " + error.message, "unknown");
+      }
+
+      completed++;
+
+      if (i < count - 1 && !shouldStop) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+  } finally {
+    $("status").textContent =
+      (shouldStop ? "Stopped. " : "Finished. ") +
+      completed + " username(s) checked.";
+
+    running = false;
+    $("start").disabled = false;
+    $("stop").disabled = true;
+  }
+});
+
+$("stop").addEventListener("click", () => {
+  shouldStop = true;
+  $("status").textContent = "Stopping after the current request...";
+});
+</script>
+</body>
+</html>
